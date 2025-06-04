@@ -4,7 +4,7 @@ import { loginAdmin } from '../api/services/authService';
 import { motion } from 'framer-motion';
 
 const LoginPage = () => {
-  const [credentials, setCredentials] = useState({ username: 'admin', password: 'admin123' });
+  const [credentials, setCredentials] = useState({ username: 'admin', password: 'admin123' }); // Or empty initial values
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -15,31 +15,33 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      setIsLoading(true);
-      setError('');
-      console.log('Gửi request đăng nhập với:', credentials);
+    setIsLoading(true);
+    setError('');
+    console.log('Attempting login with:', credentials);
 
+    try {
       const success = await loginAdmin(credentials);
 
       if (success) {
         console.log('Đăng nhập thành công - chuyển hướng');
-        // Thêm timeout nhỏ để đảm bảo token đã được lưu trước khi chuyển trang
         setTimeout(() => {
-          navigate('/');
+          navigate('/'); // Navigate to dashboard or home page
         }, 100);
       } else {
+        // This case might not be hit if authService throws an error for non-success
         setError('Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập.');
       }
     } catch (err) {
       console.error('Lỗi khi đăng nhập:', err);
-      setError('Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập admin.');
+      // err might be the error object from axios (err.response.data) or a generic error
+      const errorMessage = err.message || (err.data?.message) || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin hoặc thử lại sau.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
+   return (
     <div className="flex items-center justify-center min-h-screen bg-theme-background">
       <motion.div
         className="bg-theme-surface0 bg-opacity-50 backdrop-blur-md p-8 rounded-lg shadow-lg border border-theme-border w-full max-w-md"
@@ -62,12 +64,12 @@ const LoginPage = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-theme-text-secondary mb-2" htmlFor="username">Username</label>
+            <label className="block text-theme-text-secondary mb-2" htmlFor="username">Tên đăng nhập hoặc Email</label>
             <input
               className="w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               type="text"
               id="username"
-              name="username"
+              name="username" // This is correct for the 'credentials' state
               value={credentials.username}
               onChange={handleChange}
               required
@@ -75,12 +77,12 @@ const LoginPage = () => {
           </div>
 
           <div className="mb-6">
-            <label className="block text-theme-text-secondary mb-2" htmlFor="password">Password</label>
+            <label className="block text-theme-text-secondary mb-2" htmlFor="password">Mật khẩu</label>
             <input
               className="w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               type="password"
               id="password"
-              name="password"
+              name="password" // This is correct for the 'credentials' state
               value={credentials.password}
               onChange={handleChange}
               required

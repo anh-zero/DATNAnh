@@ -1,23 +1,33 @@
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { checkAdminAuth } from "./api/services/authService";
+import { getToken } from './api/services/authService';
 
 import Sidebar from "./components/common/Sidebar";
 import LoginPage from "./pages/LoginPage";
 
-import OverviewPage from "./pages/OverviewPage";
 import ProductsPage from "./pages/ProductsPage";
 import UsersPage from "./pages/UsersPage";
+import CustomersPage from "./pages/CustomersPage";
 import PartnersPage from "./pages/PartnersPage";
 import OrdersPage from "./pages/OrdersPage";
+import SettingsPage from "./pages/SettingsPage";
 import SalesPage from "./pages/SalesPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
-import SettingsPage from "./pages/SettingsPage";
-
+import OverviewPage from "./pages/OverviewPage";
 // Component bảo vệ Route
 const ProtectedRoute = ({ children }) => {
-   const isAuthenticated = checkAdminAuth();
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  const isAuthenticated = checkAdminAuth();
+  
+  // Kiểm tra token realtime
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.replace('/login');
+    }
+  }, []);
+  
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 function App() {
@@ -26,14 +36,40 @@ function App() {
   useEffect(() => {
     // Kiểm tra xem token có tồn tại không mỗi khi component được render
     const checkAuth = () => {
-      setIsAuthenticated(localStorage.getItem('token') !== null);
+      const token = localStorage.getItem('token');
+      setIsAuthenticated(token !== null);
+      
+      // Nếu không có token, chuyển về login
+      if (!token && window.location.pathname !== '/login') {
+        window.location.replace('/login');
+      }
     };
 
     checkAuth();
+    
     // Lắng nghe sự kiện storage để cập nhật state khi token thay đổi
-    window.addEventListener('storage', checkAuth);
-    return () => window.removeEventListener('storage', checkAuth);
-  }, []);
+    const handleStorageChange = (e) => {
+      if (e.key === 'token') {
+        checkAuth();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Kiểm tra token định kỳ (mỗi 30 giây)
+    const tokenCheckInterval = setInterval(() => {
+      const token = localStorage.getItem('token');
+      if (!token && isAuthenticated) {
+        setIsAuthenticated(false);
+        window.location.replace('/login');
+      }
+    }, 30000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(tokenCheckInterval);
+    };
+  }, [isAuthenticated]);
 
   // Layout cho các trang cần bảo vệ
   const ProtectedLayout = ({ children }) => (
@@ -52,7 +88,6 @@ function App() {
       <Route path='/' element={
         <ProtectedRoute>
           <ProtectedLayout>
-            {/* <OverviewPage /> */}
             <OverviewPage />
           </ProtectedLayout>
         </ProtectedRoute>
@@ -71,6 +106,13 @@ function App() {
           </ProtectedLayout>
         </ProtectedRoute>
       } />
+            <Route path='/customers' element={
+        <ProtectedRoute>
+          <ProtectedLayout>
+            <CustomersPage />
+          </ProtectedLayout>
+        </ProtectedRoute>
+      } />
       <Route path='/partners' element={
         <ProtectedRoute>
           <ProtectedLayout>
@@ -85,7 +127,7 @@ function App() {
           </ProtectedLayout>
         </ProtectedRoute>
       } />
-      <Route path='/sales' element={
+          <Route path='/sales' element={
         <ProtectedRoute>
           <ProtectedLayout>
             <SalesPage />
@@ -99,6 +141,7 @@ function App() {
           </ProtectedLayout>
         </ProtectedRoute>
       } />
+
       <Route path='/settings' element={
         <ProtectedRoute>
           <ProtectedLayout>

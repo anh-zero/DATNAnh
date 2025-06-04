@@ -1,17 +1,13 @@
-import { BarChart2, DollarSign, Handshake, Menu, Settings, ShoppingBag, ShoppingCart, TrendingUp, Users, LogOut } from "lucide-react";
+import { BarChart2, DollarSign, Handshake, Menu, Settings, ShoppingBag, ShoppingCart, TrendingUp, Users, LogOut, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { logoutAdmin } from "../../api/services/authService";
+import { logoutAdmin } from '../../api/services/authService';
 
 const SIDEBAR_ITEMS = [
-	{
-		name: "Overview",
-		icon: BarChart2,
-		colorClass: "text-theme-primary", // Use a class for styling
-		href: "/",
-	},
-		{ name: "Users", icon: Users, colorClass: "text-theme-primary", href: "/users" },
+	{name: "Overview", icon: BarChart2, colorClass: "text-theme-primary", href: "/",},
+	{ name: "Users", icon: Users, colorClass: "text-theme-primary", href: "/users" },
+	{ name: "Customers", icon: UserPlus, colorClass: "text-theme-primary", href: "/customers" },
 	{ name: "Partners", icon: Handshake, colorClass: "text-theme-primary", href: "/partners" },
 	{ name: "Tours", icon: ShoppingBag, colorClass: "text-theme-primary", href: "/products" },
 	{ name: "Bookings", icon: ShoppingCart, colorClass: "text-theme-primary", href: "/orders" },
@@ -23,11 +19,6 @@ const SIDEBAR_ITEMS = [
 const Sidebar = () => {
 	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 	const navigate = useNavigate();
-
-	const handleLogout = () => {
-		logoutAdmin();
-		navigate("/login");
-	};
 
 	return (
 		<motion.div
@@ -70,15 +61,14 @@ const Sidebar = () => {
 
 				<div className="mt-auto pt-4 border-t border-theme-border">
 					<button
-						onClick={handleLogout}
-						className={`
-              flex items-center w-full px-3 py-3 text-sm font-medium rounded-md
-              text-theme-text-secondary hover:bg-gray-700 hover:text-white
-              transition-colors duration-150
-              ${!isSidebarOpen ? "justify-center" : ""}
-            `}
+						onClick={() => {
+							if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+								logoutAdmin();
+							}
+						}}
+						className='flex items-center p-3 text-sm font-medium rounded-lg hover:bg-theme-background text-red-500 hover:text-red-400 transition-colors duration-200'
 					>
-						<LogOut size={isSidebarOpen ? 20 : 24} className={`${isSidebarOpen ? "mr-3" : ""}`} />
+						<LogOut size={20} />
 						{isSidebarOpen && <span className="truncate">Đăng xuất</span>}
 					</button>
 				</div>

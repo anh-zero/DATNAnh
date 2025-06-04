@@ -93,7 +93,7 @@ const UserModel = {
         }
 
         // Validate sortBy column to prevent SQL injection
-        const allowedSortColumns = ['ten_dang_nhap', 'ngay_tao', 'vai_tro', 'email_dang_nhap'];
+        const allowedSortColumns = ['id_nguoi_dung','ten_dang_nhap', 'ngay_tao', 'vai_tro', 'email_dang_nhap'];
         if (!allowedSortColumns.includes(sortBy)) {
             sortBy = 'ngay_tao'; // Default sort
         }

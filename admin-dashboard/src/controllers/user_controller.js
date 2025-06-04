@@ -44,7 +44,7 @@ const updateUserValidationRules = () => [
 const getAllUsersQueryValidationRules = () => [
     query('page').optional().isInt({ min: 1 }).withMessage('Số trang phải là số nguyên dương.').toInt(),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Giới hạn số lượng từ 1 đến 100.').toInt(),
-    query('sortBy').optional().isIn(['ten_dang_nhap', 'ngay_tao', 'vai_tro', 'email_dang_nhap']).withMessage('Sắp xếp theo trường không hợp lệ.'),
+    query('sortBy').optional().isIn(['id_nguoi_dung','ten_dang_nhap', 'ngay_tao', 'vai_tro', 'email_dang_nhap']).withMessage('Sắp xếp theo trường không hợp lệ.'),
     query('order').optional().isIn(['ASC', 'DESC']).withMessage('Thứ tự sắp xếp không hợp lệ (ASC, DESC).')
 ];
 
