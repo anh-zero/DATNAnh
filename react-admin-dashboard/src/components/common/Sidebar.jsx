@@ -1,24 +1,138 @@
-import { BarChart2, DollarSign, Handshake, Menu, Settings, ShoppingBag, ShoppingCart, TrendingUp, Users, LogOut, UserPlus } from "lucide-react";
+import { Home, ShoppingBag, BarChart, Calendar, Menu, Settings, LogOut, Users, Star, MapPin, Plane, FileText, TrendingUp, Building, Heart } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { logoutAdmin } from '../../api/services/authService';
 
 const SIDEBAR_ITEMS = [
-	{name: "Overview", icon: BarChart2, colorClass: "text-theme-primary", href: "/",},
-	{ name: "Users", icon: Users, colorClass: "text-theme-primary", href: "/users" },
-	{ name: "Customers", icon: UserPlus, colorClass: "text-theme-primary", href: "/customers" },
-	{ name: "Partners", icon: Handshake, colorClass: "text-theme-primary", href: "/partners" },
-	{ name: "Tours", icon: ShoppingBag, colorClass: "text-theme-primary", href: "/products" },
-	{ name: "Bookings", icon: ShoppingCart, colorClass: "text-theme-primary", href: "/orders" },
-	{ name: "Sales", icon: DollarSign, colorClass: "text-theme-primary", href: "/sales" },
-	{ name: "Analytics", icon: TrendingUp, colorClass: "text-theme-primary", href: "/analytics" },
-	{ name: "Settings", icon: Settings, colorClass: "text-theme-text-secondary", href: "/settings" },
+	// Tổng quan
+	{
+		name: "Tổng quan",
+		icon: Home,
+		colorClass: "text-theme-primary",
+		href: "/",
+		group: null
+	},
+
+	// Divider placeholder - KINH DOANH
+	{
+		name: "KINH DOANH",
+		icon: null,
+		colorClass: null,
+		href: null,
+		group: "divider"
+	},
+
+	// Kinh doanh items
+	{
+		name: "Quản lý Đặt tour",
+		icon: ShoppingBag,
+		colorClass: "text-theme-primary",
+		href: "/orders",
+		group: "business"
+	},
+	{
+		name: "Báo cáo & Doanh thu",
+		icon: TrendingUp,
+		colorClass: "text-theme-primary",
+		href: "/analytics",
+		group: "business"
+	},
+
+	// Divider placeholder - SẢN PHẨM
+	{
+		name: "SẢN PHẨM",
+		icon: null,
+		colorClass: null,
+		href: null,
+		group: "divider"
+	},
+
+	// Sản phẩm items
+	{
+		name: 'Sản phẩm Tours',
+		icon: Plane,
+		colorClass: "text-theme-primary",
+		href: '/tours',
+		group: "product"
+	},
+	{
+		name: "Lịch khởi hành",
+		icon: Calendar,
+		colorClass: "text-theme-primary",
+		href: "/schedules",
+		group: "product"
+	},
+	{
+		name: "Đối tác",
+		icon: Building,
+		colorClass: "text-theme-primary",
+		href: "/partners",
+		group: "product"
+	},
+
+	// Divider placeholder - QUẢN LÝ CHUNG
+	{
+		name: "QUẢN LÝ CHUNG",
+		icon: null,
+		colorClass: null,
+		href: null,
+		group: "divider"
+	},
+
+	// Quản lý chung items
+	{
+		name: "Khách hàng",
+		icon: Users,
+		colorClass: "text-theme-primary",
+		href: "/customers",
+		group: "management"
+	},
+	{
+		name: "Quản lý Đánh giá",
+		icon: Star,
+		colorClass: "text-theme-primary",
+		href: "/reviews",
+		group: "management"
+	},
+	{
+		name: "Quản lý Địa điểm",
+		icon: MapPin,
+		colorClass: "text-theme-primary",
+		href: "/locations",
+		group: "management"
+	},
+
+	// Divider placeholder - HỆ THỐNG
+	{
+		name: "HỆ THỐNG",
+		icon: null,
+		colorClass: null,
+		href: null,
+		group: "divider"
+	},
+
+	// Hệ thống items
+	{
+		name: "Người dùng hệ thống",
+		icon: Users,
+		colorClass: "text-theme-primary",
+		href: "/users",
+		group: "system"
+	},
+	{
+		name: "Cài đặt",
+		icon: Settings,
+		colorClass: "text-theme-text-secondary",
+		href: "/settings",
+		group: "system"
+	},
 ];
 
 const Sidebar = () => {
 	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 	const navigate = useNavigate();
+	const location = useLocation();
 
 	return (
 		<motion.div
@@ -26,7 +140,7 @@ const Sidebar = () => {
 				}`}
 			animate={{ width: isSidebarOpen ? 256 : 80 }}
 		>
-			<div className='h-full bg-theme-surface p-4 flex flex-col border-r border-theme-border'>
+			<div className='h-full bg-theme-surface p-4 flex flex-col border-r border-theme-border font-inter'>
 				<motion.button
 					whileHover={{ scale: 1.1 }}
 					whileTap={{ scale: 0.9 }}
@@ -36,26 +150,53 @@ const Sidebar = () => {
 					<Menu size={24} />
 				</motion.button>
 
-				<nav className='mt-8 flex-grow'>
-					{SIDEBAR_ITEMS.map((item) => (
-						<Link key={item.href} to={item.href}>
-							<motion.div className='flex items-center p-4 text-sm font-medium rounded-lg hover:bg-theme-primary hover:text-white text-theme-text-secondary transition-colors mb-2'>
-								<item.icon size={20} className={`${item.colorClass} min-w-[20px]`} />
-								<AnimatePresence>
-									{isSidebarOpen && (
-										<motion.span
-											className='ml-4 whitespace-nowrap'
-											initial={{ opacity: 0, width: 0 }}
-											animate={{ opacity: 1, width: "auto" }}
-											exit={{ opacity: 0, width: 0 }}
-											transition={{ duration: 0.2, delay: 0.3 }}
-										>
+				<nav className='mt-8 flex-grow overflow-y-auto'>
+					{SIDEBAR_ITEMS.map((item, index) => (
+						item.group === "divider" ? (
+							// Modified divider with left-aligned header
+							<div key={`divider-${index}`} className="my-6 px-1">
+								{isSidebarOpen && (
+									<div className="flex flex-col">
+										{/* Left-aligned category label */}
+										<span className="text-[10px] font-medium text-theme-text-tertiary opacity-70 tracking-wider pl-3 pb-2">
 											{item.name}
-										</motion.span>
+										</span>
+										{/* Single horizontal line below the text */}
+										<div className="h-px bg-theme-border w-full"></div>
+									</div>
+								)}
+								{!isSidebarOpen && <div className="h-px bg-theme-border w-full"></div>}
+							</div>
+						) : item.href ? (
+							<Link key={item.href} to={item.href}>
+								<motion.div
+									className={`flex items-center py-3.5 px-4 text-sm font-medium rounded-lg transition-all duration-200 mb-1.5 ${location.pathname === item.href
+										? 'bg-theme-primary/10 text-theme-primary font-semibold'
+										: 'text-theme-text-secondary hover:bg-theme-primary/5'
+										}`}
+								>
+									{item.icon && (
+										<item.icon
+											size={18}
+											className={`${location.pathname === item.href ? 'text-theme-primary' : 'text-theme-text-secondary'} min-w-[18px]`}
+										/>
 									)}
-								</AnimatePresence>
-							</motion.div>
-						</Link>
+									<AnimatePresence>
+										{isSidebarOpen && (
+											<motion.span
+												className='ml-3.5 whitespace-nowrap'
+												initial={{ opacity: 0, width: 0 }}
+												animate={{ opacity: 1, width: "auto" }}
+												exit={{ opacity: 0, width: 0 }}
+												transition={{ duration: 0.2, delay: 0.3 }}
+											>
+												{item.name}
+											</motion.span>
+										)}
+									</AnimatePresence>
+								</motion.div>
+							</Link>
+						) : null
 					))}
 				</nav>
 
@@ -66,10 +207,10 @@ const Sidebar = () => {
 								logoutAdmin();
 							}
 						}}
-						className='flex items-center p-3 text-sm font-medium rounded-lg hover:bg-theme-background text-red-500 hover:text-red-400 transition-colors duration-200'
+						className='flex items-center py-3.5 px-4 text-sm font-medium rounded-lg hover:bg-red-50 text-red-500 hover:text-red-600 transition-colors duration-200'
 					>
-						<LogOut size={20} />
-						{isSidebarOpen && <span className="truncate">Đăng xuất</span>}
+						<LogOut size={18} />
+						{isSidebarOpen && <span className="ml-3.5 truncate">Đăng xuất</span>}
 					</button>
 				</div>
 			</div>

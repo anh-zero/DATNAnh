@@ -1,4 +1,4 @@
-const UserModel = require('../models/user_model');
+const UserModel = require('../models/nguoidung_model');
 const { comparePassword } = require('../utils/password_utils');
 const { generateToken } = require('../utils/jwt_utils');
 

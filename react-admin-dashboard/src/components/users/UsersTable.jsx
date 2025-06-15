@@ -1,15 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Search, UserPlus, Edit, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowDownUp, Eye } from "lucide-react";
-import {
-  getAllUsers,
-  createUser,
-  updateUser,
-  deleteUser,
-  getUserById,
-} from "../../api/services/userService";
-import UserFormModal from "./UserFormModal";
-import UserDetailsModal from "./UserDetailsModal";
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Search, Edit, Trash2, UserPlus, ArrowDownUp, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
+import { getAllUsers, createUser, updateUser, deleteUser, getUserById } from '../../api/services/userService';
+import UserFormModal from './UserFormModal';
+import UserDetailsModal from './UserDetailsModal';
+import axios from 'axios';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -18,37 +13,31 @@ const UsersTable = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [error, setError] = useState(null);
-
-  // Modal state
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-
-  // User Details Modal state
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [viewingUser, setViewingUser] = useState(null);
-
-  // API interaction state
-  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [sortBy, setSortBy] = useState("ngay_tao");
-  const [order, setOrder] = useState("DESC");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('ngay_tao');
+  const [order, setOrder] = useState('DESC');
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const params = {
+      const response = await getAllUsers({
         page: currentPage,
         limit: ITEMS_PER_PAGE,
-        searchTerm: searchTerm,
+        search: searchTerm,
         sortBy: sortBy,
-        order: order,
-      };
-      const response = await getAllUsers(params);
+        order: order
+      });
 
       setUsers(response.users || []);
+
       if (response.pagination) {
         setTotalPages(response.pagination.totalPages || 1);
         setTotalItems(response.pagination.totalItems || 0);
@@ -148,38 +137,44 @@ const UsersTable = () => {
 
   const handleFormSubmit = async (formDataFromModal) => {
     setIsLoading(true);
-    setError(null);
-
-    const data = new FormData();
-    data.append('ten_dang_nhap', formDataFromModal.ten_dang_nhap);
-    data.append('email_dang_nhap', formDataFromModal.email_dang_nhap);
-    data.append('vai_tro', formDataFromModal.vai_tro);
-
-    if (formDataFromModal.mat_khau) {
-      data.append('mat_khau', formDataFromModal.mat_khau);
-      if (formDataFromModal.confirm_mat_khau) {
-        data.append('confirm_mat_khau', formDataFromModal.confirm_mat_khau);
-      }
-    }
-
-    if (formDataFromModal.avatarFile) {
-      data.append('url_anh_dai_dien', formDataFromModal.avatarFile);
-    }
-
-    if (editingUser && editingUser.id_nguoi_dung && formDataFromModal.dang_hoat_dong !== undefined) {
-      data.append('dang_hoat_dong', formDataFromModal.dang_hoat_dong);
-    }
-
     try {
-      if (editingUser && editingUser.id_nguoi_dung) {
-        await updateUser(editingUser.id_nguoi_dung, data);
-        alert("Người dùng đã được cập nhật thành công.");
+      // Xử lý formData đúng cách
+      let response;
+      const userId = formDataFromModal.get('id_nguoi_dung'); // Nếu có
+
+      if (editingUser) {
+        // Update user
+        response = await axios.put(
+          `${import.meta.env.VITE_API_URL}/api/nguoidung/${editingUser.id_nguoi_dung}`,
+          formDataFromModal,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              // KHÔNG set 'Content-Type': 'application/json' vì đây là FormData
+            }
+          }
+        );
       } else {
-        await createUser(data);
-        alert("Người dùng đã được tạo thành công.");
+        // Create user
+        response = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/nguoidung`,
+          formDataFromModal,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              // KHÔNG set 'Content-Type': 'application/json' vì đây là FormData
+            }
+          }
+        );
       }
-      fetchUsers();
-      onCloseFormModal();
+
+      if (response.data.success) {
+        alert(response.data.message || "Người dùng đã được lưu thành công.");
+        fetchUsers();
+        onCloseFormModal();
+      } else {
+        throw new Error(response.data.message || "Lỗi không xác định khi lưu người dùng.");
+      }
     } catch (err) {
       console.error("Lỗi khi lưu user:", err.response ? err.response.data : err.message);
       setError(err.response?.data?.message || err.response?.data?.error || 'Lỗi không xác định khi lưu người dùng.');
@@ -192,26 +187,21 @@ const UsersTable = () => {
     if (sortBy === field) {
       return order === "ASC" ? " ▲" : " ▼";
     }
-    return <ArrowDownUp size={14} className="inline ml-1 opacity-50" />;
+    return "";
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString('vi-VN', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
-      });
-    } catch (e) {
-      return 'Invalid Date';
-    }
-  };
+  const getStatusBadge = (status) => {
+    // Chuyển đổi status sang dạng số để so sánh chính xác
+    const statusNum = parseInt(status);
 
-  const formatUserStatus = (status) => {
-    switch (status) {
-      case 1: return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green text-white dark:bg-green-800 dark:text-green-100">Hoạt động</span>;
-      case 0: return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">Bị khóa</span>;
-      case 2: return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">Đã xóa</span>;
-      default: return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">Không rõ</span>;
+    if (statusNum === 1) {
+      return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Đang hoạt động</span>;
+    } else if (statusNum === 0) {
+      return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Ngưng hoạt động</span>;
+    } else if (statusNum === 2) {
+      return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Đã xóa</span>;
+    } else {
+      return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Không rõ ({status})</span>;
     }
   };
 
@@ -225,20 +215,22 @@ const UsersTable = () => {
     >
       <div className='flex flex-col sm:flex-row justify-between items-center mb-6 gap-4'>
         <h2 className='text-xl font-semibold text-theme-text-primary'>Danh sách Người dùng</h2>
-        <div className='flex items-center space-x-0 sm:space-x-4 w-full sm:w-auto'>
-          <div className='relative flex-grow sm:flex-grow-0'>
+
+        <div className='flex flex-col sm:flex-row gap-3 w-full sm:w-auto'>
+          <div className='relative w-full sm:w-64'>
             <input
               type='text'
-              placeholder='Tìm kiếm (tên, email)...'
-              className='bg-theme-surface border border-theme-border text-theme-text-primary placeholder-theme-text-secondary rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-theme-primary w-full'
+              placeholder='Tìm kiếm...'
+              className='bg-theme-background border border-theme-border px-4 py-2 pr-10 w-full rounded-md focus:outline-none focus:ring-2 focus:ring-theme-primary'
               value={searchTerm}
               onChange={handleSearchChange}
             />
-            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-theme-text-secondary' size={18} />
+            <Search className='absolute top-2.5 right-3 text-theme-text-secondary' size={18} />
           </div>
+
           <button
+            className='bg-theme-primary text-white px-4 py-2 rounded-md flex items-center justify-center'
             onClick={handleOpenCreateModal}
-            className='flex items-center bg-theme-primary hover:bg-theme-primary-hover text-white px-3 sm:px-4 py-2 rounded-lg transition duration-200 ml-2 sm:ml-0'
           >
             <UserPlus size={18} className='mr-0 sm:mr-2' />
             <span className="hidden sm:inline">Thêm mới</span>
@@ -260,26 +252,23 @@ const UsersTable = () => {
 
       {!isLoading && !error && !users.length && searchTerm && (
         <div className="text-center py-8 text-theme-text-secondary">
-          Không tìm thấy người dùng nào khớp với "{searchTerm}".
+          Không tìm thấy người dùng nào phù hợp với từ khóa "{searchTerm}"
         </div>
       )}
+
       {!isLoading && !error && !users.length && !searchTerm && (
         <div className="text-center py-8 text-theme-text-secondary">
-          Chưa có người dùng nào.
+          Chưa có người dùng nào. Tạo mới ngay!
         </div>
       )}
 
-
-      {users.length > 0 && (
-        <div className='overflow-x-auto'>
-          <table className='min-w-full divide-y divide-theme-border'>
-            <thead>
+      {!isLoading && !error && users.length > 0 && (
+        <div className='overflow-auto rounded-lg border border-theme-border'>
+          <table className='min-w-full bg-theme-surface divide-y divide-theme-border'>
+            <thead className='bg-theme-background'>
               <tr>
                 <th className='px-6 py-3 text-left text-xs font-medium text-theme-text-secondary uppercase tracking-wider cursor-pointer' onClick={() => handleSort('id_nguoi_dung')}>
                   ID {renderSortIcon('id_nguoi_dung')}
-                </th>
-                <th className='px-6 py-3 text-left text-xs font-medium text-theme-text-secondary uppercase tracking-wider'>
-                  Ảnh đại diện
                 </th>
                 <th className='px-6 py-3 text-left text-xs font-medium text-theme-text-secondary uppercase tracking-wider cursor-pointer' onClick={() => handleSort('ten_dang_nhap')}>
                   Tên đăng nhập {renderSortIcon('ten_dang_nhap')}
@@ -296,7 +285,8 @@ const UsersTable = () => {
                 <th className='px-6 py-3 text-left text-xs font-medium text-theme-text-secondary uppercase tracking-wider'>
                   Trạng thái
                 </th>
-                <th className='px-6 py-3 text-left text-xs font-medium text-theme-text-secondary uppercase tracking-wider'>
+                {/* Header của cột Hành động */}
+                <th className='px-6 py-3 text-center text-xs font-medium text-theme-text-secondary uppercase tracking-wider whitespace-nowrap w-28'>
                   Hành động
                 </th>
               </tr>
@@ -311,78 +301,63 @@ const UsersTable = () => {
                   className='hover:bg-theme-background cursor-pointer' // Add cursor-pointer
                   onClick={() => handleOpenDetailsModal(user.id_nguoi_dung)} // Add onClick handler here
                 >
-                  <td className='px-6 py-4 whitespace-nowrap text-sm text-theme-text-primary'>{user.id_nguoi_dung}</td>
-                  <td className='px-6 py-4 whitespace-nowrap text-sm text-theme-text-secondary'>
-                    {user.url_anh_dai_dien ? (
-                      <>
-                        <img
-                          src={
-                            user.url_anh_dai_dien.startsWith('http')
+                  <td className='px-6 py-4 whitespace-nowrap'>{user.id_nguoi_dung}</td>
+                  <td className='px-6 py-4 whitespace-nowrap'>
+                    <div className='flex items-center'>
+                      <div className='flex-shrink-0 h-8 w-8'>
+                        {user.url_anh_dai_dien ? (
+                          <img
+                            className='h-8 w-8 rounded-full object-cover'
+                            src={user.url_anh_dai_dien.startsWith('http')
                               ? user.url_anh_dai_dien
-                              : `${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '')}${user.url_anh_dai_dien.startsWith('/') ? user.url_anh_dai_dien : '/' + user.url_anh_dai_dien}`
-                          }
-                          alt={user.ten_dang_nhap || 'Avatar'}
-                          className="w-10 h-10 rounded-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            const fallbackDiv = e.currentTarget.nextElementSibling;
-                            if (fallbackDiv) {
-                              fallbackDiv.style.display = 'inline-flex';
-                            }
-                          }}
-                        />
-                        <div
-                          className="w-10 h-10 rounded-full bg-gray-700 text-gray-400 flex items-center justify-center text-xs"
-                          style={{ display: 'none' }}
-                        >
-                          N/A
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-gray-500 text-xs">
-                        No Img
+                              : `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/${user.url_anh_dai_dien.replace(/\\/g, '/')}`}
+                            alt=''
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = 'https://via.placeholder.com/40?text=No+Image';
+                            }}
+                          />
+                        ) : (
+                          <div className='h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center text-gray-300'>
+                            {user.ten_dang_nhap?.charAt(0).toUpperCase() || '?'}
+                          </div>
+                        )}
                       </div>
-                    )}
+                      <div className='ml-4'>
+                        <div className='text-sm font-medium text-theme-text-primary'>{user.ten_dang_nhap}</div>
+                      </div>
+                    </div>
                   </td>
-                  <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-theme-text-primary'>
-                    {user.ten_dang_nhap}
+                  <td className='px-6 py-4 whitespace-nowrap text-sm'>{user.email_dang_nhap}</td>
+                  <td className='px-6 py-4 whitespace-nowrap text-sm capitalize'>{user.vai_tro}</td>
+                  <td className='px-6 py-4 whitespace-nowrap text-sm'>
+                    {new Date(user.ngay_tao).toLocaleDateString('vi-VN', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                    })}
                   </td>
-                  <td className='px-6 py-4 whitespace-nowrap text-sm text-theme-text-secondary'>
-                    {user.email_dang_nhap}
+                  <td className='px-6 py-4 whitespace-nowrap'>
+                    {getStatusBadge(user.dang_hoat_dong)}
                   </td>
-                  <td className='px-6 py-4 whitespace-nowrap text-sm text-theme-text-secondary'>
-                    {user.vai_tro}
-                  </td>
-                  <td className='px-6 py-4 whitespace-nowrap text-sm text-theme-text-secondary'>
-                    {formatDate(user.ngay_tao)}
-                  </td>
-                  <td className='px-6 py-4 whitespace-nowrap text-sm text-theme-text-secondary'>
-                    {formatUserStatus(user.dang_hoat_dong)}
-                  </td>
-                  <td className='px-6 py-4 whitespace-nowrap text-sm text-theme-text-secondary'>
-                    {/* Remove the Eye icon button or keep it as an alternative */}
-                    {/* <button
-                      className='text-blue-500 hover:text-blue-400 mr-2 p-1'
-                      onClick={(e) => { e.stopPropagation(); handleOpenDetailsModal(user.id_nguoi_dung); }} // Add stopPropagation if keeping
-                      title="Xem chi tiết"
-                      disabled={isLoadingDetails && viewingUser?.id_nguoi_dung === user.id_nguoi_dung}
-                    >
-                      <Eye size={18} />
-                    </button> */}
-                    <button
-                      className='text-theme-primary hover:text-theme-primary-hover mr-2 p-1'
-                      onClick={(e) => { e.stopPropagation(); handleOpenEditModal(user); }} // Add stopPropagation
-                      title="Sửa"
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      className='text-red-500 hover:text-red-400 p-1'
-                      onClick={(e) => { e.stopPropagation(); handleDelete(user.id_nguoi_dung); }} // Add stopPropagation
-                      title="Xóa"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                  {/* Nội dung cột Hành động */}
+                  <td className='px-6 py-4 whitespace-nowrap text-center w-28'>
+                    <div className="flex items-center justify-center space-x-3">
+                      <button
+                        className='text-blue-500 hover:text-blue-700 p-1'
+                        onClick={(e) => { e.stopPropagation(); handleOpenEditModal(user); }}
+                        title="Sửa"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button
+                        className='text-red-500 hover:text-red-400 p-1'
+                        onClick={(e) => { e.stopPropagation(); handleDelete(user.id_nguoi_dung); }}
+                        title="Xóa"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </td>
                 </motion.tr>
               ))}

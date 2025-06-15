@@ -1,43 +1,40 @@
-import api from '../axios'; // Changed from '../apiUtil' to '../axios'
-import { getToken } from './authService'; // Assuming you have a way to get the auth token
+import api from '../axios';
+import { getToken } from './authService';
 
-const BASE_URL = 'api/customers'; // Base URL for customer endpoints
+// Sửa đường dẫn từ "api/nguoidung" thành "/api/khachhang"
+const BASE_URL = '/api/khachhang';
 
-// Helper to get authenticated headers
-const getAuthHeaders = () => {
+// Helper để lấy auth headers
+const getAuthHeaders = (isFormData = false) => {
     const token = getToken();
-    return {
+    const headers = {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
     };
+    if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
 };
-
-const getAuthHeadersWithFormData = () => {
-    const token = getToken();
-    return {
-        'Authorization': `Bearer ${token}`,
-        // Content-Type is set automatically by browser for FormData
-    };
-};
-
 
 export const getAllCustomers = async (params = {}) => {
     try {
+        console.log('Calling API:', BASE_URL, 'with params:', params); // Log cho debug
         const response = await api.get(BASE_URL, {
             headers: getAuthHeaders(),
-            params: params,
+            params: params, // { page, limit, searchTerm, sortBy, order }
         });
-        // Backend trả về: { success: true, data: [...customersArray], pagination: {...} }
+
+        console.log('API response:', response.data); // Log cho debug
+
         if (response.data && response.data.success) {
             return {
-                customers: response.data.data, // Lấy mảng khách hàng từ response.data.data
-                pagination: response.data.pagination, // Lấy object pagination từ response.data.pagination
+                customers: response.data.data || [],
+                pagination: response.data.pagination || {}
             };
         }
-        // Nếu cấu trúc không như mong đợi hoặc success là false, trả về một cấu trúc rỗng để tránh lỗi
-        return { customers: [], pagination: {} };
+        throw new Error(response.data?.message || 'Không thể lấy danh sách khách hàng.');
     } catch (error) {
-        console.error('Error fetching all customers:', error.response?.data || error.message);
+        console.error('Error fetching customers:', error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
@@ -47,22 +44,28 @@ export const getCustomerById = async (customerId) => {
         const response = await api.get(`${BASE_URL}/${customerId}`, {
             headers: getAuthHeaders(),
         });
-        // Assuming backend returns { success: true, data: customerObject }
-        return response.data; // Expects { success: true, data: { ...customer_details } }
+
+        if (response.data) {
+            return response.data;
+        }
+        throw new Error(response.data?.message || `Không thể lấy thông tin khách hàng ID ${customerId}.`);
     } catch (error) {
-        console.error(`Error fetching customer by ID ${customerId}:`, error.response?.data || error.message);
+        console.error(`Error fetching customer ${customerId}:`, error.response?.data || error.message);
         throw error.response?.data || error;
     }
 };
 
 export const createCustomer = async (customerData) => {
     try {
-        // customerData should be a plain object, not FormData unless handling file uploads
+        const isFormData = customerData instanceof FormData;
         const response = await api.post(BASE_URL, customerData, {
-            headers: getAuthHeaders(), // Use JSON content type
+            headers: getAuthHeaders(isFormData),
         });
-        // Assuming backend returns { success: true, message: "...", data: newCustomer }
-        return response.data;
+
+        if (response.data) {
+            return response.data;
+        }
+        throw new Error(response.data?.message || 'Không thể tạo khách hàng mới.');
     } catch (error) {
         console.error('Error creating customer:', error.response?.data || error.message);
         throw error.response?.data || error;
@@ -71,12 +74,15 @@ export const createCustomer = async (customerData) => {
 
 export const updateCustomer = async (customerId, customerData) => {
     try {
-        // customerData should be a plain object
+        const isFormData = customerData instanceof FormData;
         const response = await api.put(`${BASE_URL}/${customerId}`, customerData, {
-            headers: getAuthHeaders(), // Use JSON content type
+            headers: getAuthHeaders(isFormData),
         });
-        // Assuming backend returns { success: true, message: "..." }
-        return response.data;
+
+        if (response.data) {
+            return response.data;
+        }
+        throw new Error(response.data?.message || `Không thể cập nhật khách hàng ID ${customerId}.`);
     } catch (error) {
         console.error(`Error updating customer ${customerId}:`, error.response?.data || error.message);
         throw error.response?.data || error;
@@ -88,10 +94,31 @@ export const deleteCustomer = async (customerId) => {
         const response = await api.delete(`${BASE_URL}/${customerId}`, {
             headers: getAuthHeaders(),
         });
-        // Assuming backend returns { success: true, message: "..." }
-        return response.data;
+
+        if (response.data) {
+            return response.data;
+        }
+        throw new Error(response.data?.message || `Không thể xóa khách hàng ID ${customerId}.`);
     } catch (error) {
         console.error(`Error deleting customer ${customerId}:`, error.response?.data || error.message);
         throw error.response?.data || error;
+    }
+};
+
+export const getCustomerBookings = async (customerId, page = 1, limit = 10) => {
+    try {
+        // Add console.log to see what URL is being requested
+        console.log('Requesting URL:', `api/khachhang/${customerId}/dattour`);
+
+        // Make the API call
+        const response = await api.get(`api/khachhang/${customerId}/dattour`, {
+            params: { page, limit }
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching customer bookings:', error);
+        console.error('Error details:', error.response?.data || error.message);
+        throw error;
     }
 };

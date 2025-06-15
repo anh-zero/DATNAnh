@@ -24,9 +24,7 @@ const LoginPage = () => {
 
       if (success) {
         console.log('Đăng nhập thành công - chuyển hướng');
-        setTimeout(() => {
-          navigate('/'); // Navigate to dashboard or home page
-        }, 100);
+        navigate('/'); // Navigate immediately
       } else {
         // This case might not be hit if authService throws an error for non-success
         setError('Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập.');
@@ -41,7 +39,7 @@ const LoginPage = () => {
     }
   };
 
-   return (
+  return (
     <div className="flex items-center justify-center min-h-screen bg-theme-background">
       <motion.div
         className="bg-theme-surface0 bg-opacity-50 backdrop-blur-md p-8 rounded-lg shadow-lg border border-theme-border w-full max-w-md"

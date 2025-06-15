@@ -1,0 +1,1748 @@
+{
+    "info": {
+        "_postman_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+        "name": "Admin Dashboard API Tests (Tour Management)",
+        "description": "Postman collection for testing the Tour Management Admin Dashboard backend API.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "NguoiDung",
+            "item": [
+                {
+                    "name": "Admin Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Token is present and set as collection variable\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    if (jsonData.token) {",
+                                    "        pm.collectionVariables.set(\"authToken\", jsonData.token);",
+                                    "        console.log(\"Auth token set from login.\");",
+                                    "        pm.expect(jsonData.token).to.be.a('string');",
+                                    "    } else {",
+                                    "        console.log(\"Token not found in response.\");",
+                                    "    }",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email_dang_nhap\": \"admin@example.com\",\n  \"mat_khau\": \"adminpassword123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoidung/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoidung",
+                                "login"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All NguoiDung",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoidung",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoidung"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create NguoiDung",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email_dang_nhap\": \"testuser@example.com\",\n  \"ho_ten\": \"Test User\",\n  \"mat_khau\": \"securepassword123\",\n  \"vai_tro\": \"USER\",\n  \"avartar\": \"http://example.com/avatar.png\",\n  \"dang_hoat_dong\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoidung",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoidung"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get NguoiDung By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoidung/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoidung",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "NguoiDung ID"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update NguoiDung",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email_dang_nhap\": \"updateduser@example.com\",\n  \"ho_ten\": \"Updated User Name\",\n  \"vai_tro\": \"ADMIN\",\n  \"avartar\": \"http://example.com/updated_avatar.png\",\n  \"dang_hoat_dong\": 0\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoidung/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoidung",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "NguoiDung ID"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete NguoiDung",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoidung/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoidung",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1",
+                                    "description": "NguoiDung ID"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "KhachHang",
+            "item": [
+                {
+                    "name": "Get All KhachHang",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/khachhang",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "khachhang"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create KhachHang",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_nguoi_dung\": 1,\n  \"ho_ten\": \"Nguyen Van A\",\n  \"cccd\": \"012345678901\",\n  \"ngay_sinh\": \"1990-01-01\",\n  \"so_dien_thoai\": \"0909123456\",\n  \"email_lien_he\": \"khachhangA@example.com\",\n  \"dia_chi_kh\": \"123 Duong ABC, Quan 1, TP.HCM\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/khachhang",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "khachhang"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get KhachHang By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/khachhang/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "khachhang",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update KhachHang",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_nguoi_dung\": 1,\n  \"ho_ten\": \"Nguyen Van B\",\n  \"cccd\": \"098765432109\",\n  \"ngay_sinh\": \"1992-02-02\",\n  \"so_dien_thoai\": \"0909654321\",\n  \"email_lien_he\": \"khachhangB@example.com\",\n  \"dia_chi_kh\": \"456 Duong XYZ, Quan 2, TP.HCM\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/khachhang/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "khachhang",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete KhachHang",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/khachhang/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "khachhang",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "DatTour",
+            "item": [
+                {
+                    "name": "Get All DatTour",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dattour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dattour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create DatTour",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_khach_hang\": 1,\n  \"id_lich_trinh_tour\": 1,\n  \"ngay_dat\": \"2024-01-15 10:00:00\",\n  \"so_luong_khach\": 2,\n  \"tong_tien_du_kien\": 5000000.00,\n  \"tong_tien_thanh_toan\": 4800000.00,\n  \"trang_thai_thanh_toan\": \"DA_THANH_TOAN\",\n  \"trang_thai_dat_tour\": \"DA_XAC_NHAN\",\n  \"ghi_chu_dat_tour\": \"Yeu cau phong view bien\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dattour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dattour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get DatTour By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dattour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dattour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update DatTour",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_khach_hang\": 1,\n  \"id_lich_trinh_tour\": 1,\n  \"ngay_dat\": \"2024-01-16 11:00:00\",\n  \"so_luong_khach\": 3,\n  \"tong_tien_du_kien\": 7500000.00,\n  \"tong_tien_thanh_toan\": 7200000.00,\n  \"trang_thai_thanh_toan\": \"DA_THANH_TOAN_MOT_PHAN\",\n  \"trang_thai_dat_tour\": \"CHO_XAC_NHAN\",\n  \"ghi_chu_dat_tour\": \"Cap nhat yeu cau\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dattour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dattour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete DatTour",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dattour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dattour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "DanhGiaTour",
+            "item": [
+                {
+                    "name": "Get All DanhGiaTour",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/danhgiatour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "danhgiatour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create DanhGiaTour",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_dat_tour\": 1,\n  \"diem_danh_gia\": 5,\n  \"binh_luan\": \"Tour rat tuyet voi!\",\n  \"ngay_danh_gia\": \"2024-02-01 14:30:00\",\n  \"da_duyet\": 0,\n  \"phan_hoi_quan_tri\": \"\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/danhgiatour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "danhgiatour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get DanhGiaTour By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/danhgiatour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "danhgiatour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update DanhGiaTour",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_dat_tour\": 1,\n  \"diem_danh_gia\": 4,\n  \"binh_luan\": \"Tour tot, nhung can cai thien ve an uong.\",\n  \"ngay_danh_gia\": \"2024-02-02 10:00:00\",\n  \"da_duyet\": 1,\n  \"phan_hoi_quan_tri\": \"Cam on gop y cua ban.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/danhgiatour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "danhgiatour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete DanhGiaTour",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/danhgiatour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "danhgiatour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "NguoiThamGiaTrongDatTour",
+            "item": [
+                {
+                    "name": "Get All NguoiThamGiaTrongDatTour",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoithamgiatrongdattour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoithamgiatrongdattour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create NguoiThamGiaTrongDatTour",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_dat_tour\": 1,\n  \"ho_ten\": \"Tran Thi B\",\n  \"ngay_sinh\": \"1995-05-10\",\n  \"ghi_chu\": \"Nguoi lon\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoithamgiatrongdattour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoithamgiatrongdattour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get NguoiThamGiaTrongDatTour By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoithamgiatrongdattour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoithamgiatrongdattour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update NguoiThamGiaTrongDatTour",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_dat_tour\": 1,\n  \"ho_ten\": \"Tran Van C\",\n  \"ngay_sinh\": \"2010-10-20\",\n  \"ghi_chu\": \"Tre em\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoithamgiatrongdattour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoithamgiatrongdattour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete NguoiThamGiaTrongDatTour",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/nguoithamgiatrongdattour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "nguoithamgiatrongdattour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "DiaDiem",
+            "item": [
+                {
+                    "name": "Get All DiaDiem",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/diadiem",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "diadiem"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create DiaDiem",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ten_dia_diem\": \"Vinh Ha Long\",\n  \"mo_ta\": \"Ky quan thien nhien the gioi\",\n  \"dia_chi\": \"TP. Ha Long, Quang Ninh\",\n  \"thanh_pho\": \"Ha Long\",\n  \"quoc_gia\": \"Viet Nam\",\n  \"loai_dia_diem\": \"THIEN_NHIEN\",\n  \"kinh_do\": 107.0,\n  \"vi_do\": 20.916667\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/diadiem",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "diadiem"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get DiaDiem By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/diadiem/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "diadiem",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update DiaDiem",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ten_dia_diem\": \"Vinh Ha Long Updated\",\n  \"mo_ta\": \"Ky quan thien nhien the gioi - updated\",\n  \"dia_chi\": \"TP. Ha Long, Quang Ninh, Viet Nam\",\n  \"thanh_pho\": \"Ha Long City\",\n  \"quoc_gia\": \"Vietnam\",\n  \"loai_dia_diem\": \"DI_SAN_VAN_HOA\",\n  \"kinh_do\": 107.0001,\n  \"vi_do\": 20.916668\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/diadiem/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "diadiem",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete DiaDiem",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/diadiem/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "diadiem",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "HoatDongTour",
+            "item": [
+                {
+                    "name": "Get All HoatDongTour",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/hoatdongtour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "hoatdongtour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create HoatDongTour",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_lich_trinh_tour\": 1,\n  \"id_dia_diem\": 1,\n  \"id_dich_vu_tour\": 1,\n  \"thoi_gian_bat_dau\": \"09:00:00\",\n  \"thoi_gian_ket_thuc\": \"12:00:00\",\n  \"ten_hoat_dong\": \"Tham quan hang Sung Sot\",\n  \"mo_ta_chi_tiet\": \"Chi tiet tham quan hang Sung Sot.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/hoatdongtour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "hoatdongtour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get HoatDongTour By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/hoatdongtour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "hoatdongtour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update HoatDongTour",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_lich_trinh_tour\": 1,\n  \"id_dia_diem\": 1,\n  \"id_dich_vu_tour\": 2,\n  \"thoi_gian_bat_dau\": \"10:00:00\",\n  \"thoi_gian_ket_thuc\": \"13:00:00\",\n  \"ten_hoat_dong\": \"Tham quan hang Dau Go\",\n  \"mo_ta_chi_tiet\": \"Chi tiet tham quan hang Dau Go.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/hoatdongtour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "hoatdongtour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete HoatDongTour",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/hoatdongtour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "hoatdongtour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "LichTrinhTour",
+            "item": [
+                {
+                    "name": "Get All LichTrinhTour",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/lichtrinhtour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "lichtrinhtour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create LichTrinhTour",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_san_pham_tour\": 1,\n  \"ngay_khoi_hanh\": \"2024-03-01\",\n  \"ngay_ket_thuc\": \"2024-03-03\",\n  \"gia_tien\": 2500000.00,\n  \"so_luong_cho_toi_da\": 20,\n  \"trang_thai_lich_trinh\": \"MO_BAN\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/lichtrinhtour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "lichtrinhtour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get LichTrinhTour By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/lichtrinhtour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "lichtrinhtour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update LichTrinhTour",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_san_pham_tour\": 1,\n  \"ngay_khoi_hanh\": \"2024-03-05\",\n  \"ngay_ket_thuc\": \"2024-03-07\",\n  \"gia_tien\": 2600000.00,\n  \"so_luong_cho_toi_da\": 25,\n  \"so_luong_cho_da_dat\": 5,\n  \"trang_thai_lich_trinh\": \"DA_KHOI_HANH\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/lichtrinhtour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "lichtrinhtour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete LichTrinhTour",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/lichtrinhtour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "lichtrinhtour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "SanPhamTour",
+            "item": [
+                {
+                    "name": "Get All SanPhamTour",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/sanphamtour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sanphamtour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create SanPhamTour",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ten_tour\": \"Tour Ha Long 3 Ngay 2 Dem\",\n  \"mo_ta_chi_tiet\": \"Kham pha Vinh Ha Long voi du thuyen 5 sao.\",\n  \"thoi_gian_du_kien\": \"3N2D\",\n  \"url_anh_bia\": \"http://example.com/halong_tour.jpg\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/sanphamtour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sanphamtour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get SanPhamTour By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/sanphamtour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sanphamtour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update SanPhamTour",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ten_tour\": \"Tour Ha Long Bay Luxury 3 Days 2 Nights\",\n  \"mo_ta_chi_tiet\": \"Experience Ha Long Bay on a luxury cruise, updated itinerary.\",\n  \"thoi_gian_du_kien\": \"3 days 2 nights\",\n  \"url_anh_bia\": \"http://example.com/halong_tour_updated.jpg\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/sanphamtour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sanphamtour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete SanPhamTour",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/sanphamtour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "sanphamtour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "DoiTac",
+            "item": [
+                {
+                    "name": "Get All DoiTac",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/doitac",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "doitac"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create DoiTac",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ten_doi_tac\": \"Khach San Paradise\",\n  \"dia_chi\": \"123 Tuan Chau, Ha Long\",\n  \"id_dia_diem\": 1,\n  \"so_dien_thoai\": \"02031234567\",\n  \"email\": \"contact@paradisehotel.com\",\n  \"mo_ta_chi_tiet_doi_tac\": \"Khach san 4 sao tai Tuan Chau.\",\n  \"ma_so_thue\": \"0100123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/doitac",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "doitac"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get DoiTac By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/doitac/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "doitac",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update DoiTac",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ten_doi_tac\": \"Paradise Hotel & Resort\",\n  \"dia_chi\": \"456 Tuan Chau Island, Ha Long\",\n  \"id_dia_diem\": 1,\n  \"so_dien_thoai\": \"02037654321\",\n  \"email\": \"info@paradiseresort.com\",\n  \"mo_ta_chi_tiet_doi_tac\": \"Khach san va resort 5 sao tai dao Tuan Chau.\",\n  \"ma_so_thue\": \"0100654321\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/doitac/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "doitac",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete DoiTac",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/doitac/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "doitac",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "DichVuTour",
+            "item": [
+                {
+                    "name": "Get All DichVuTour",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dichvutour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dichvutour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create DichVuTour",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_lich_trinh_tour\": 1,\n  \"id_doi_tac\": 1,\n  \"ten_dich_vu\": \"Xe dua don san bay\",\n  \"loai_dich_vu\": \"VAN_CHUYEN\",\n  \"ghi_chu\": \"Xe 7 cho\",\n  \"gia_nhap\": 500000.00,\n  \"so_luong\": 1,\n  \"don_vi_tinh\": \"chuyen\",\n  \"thoi_gian_bat_dau\": \"2024-03-01 08:00:00\",\n  \"thoi_gian_ket_thuc\": \"2024-03-01 09:00:00\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dichvutour",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dichvutour"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get DichVuTour By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dichvutour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dichvutour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update DichVuTour",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"id_lich_trinh_tour\": 1,\n  \"id_doi_tac\": 1,\n  \"ten_dich_vu\": \"Xe dua don san bay VIP\",\n  \"loai_dich_vu\": \"VAN_CHUYEN_VIP\",\n  \"ghi_chu\": \"Xe Limousine 9 cho\",\n  \"gia_nhap\": 800000.00,\n  \"so_luong\": 1,\n  \"don_vi_tinh\": \"chuyen\",\n  \"thoi_gian_bat_dau\": \"2024-03-01 07:30:00\",\n  \"thoi_gian_ket_thuc\": \"2024-03-01 08:30:00\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/dichvutour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dichvutour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete DichVuTour",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/dichvutour/:id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "dichvutour",
+                                ":id"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3001/api",
+            "type": "string"
+        },
+        {
+            "key": "authToken",
+            "value": "YOUR_AUTH_TOKEN_HERE",
+            "type": "string"
+        }
+    ]
+}

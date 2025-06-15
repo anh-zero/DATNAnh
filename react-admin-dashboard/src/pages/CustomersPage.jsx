@@ -5,6 +5,10 @@ import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
 import CustomersTable from "../components/customers/CustomersTable";
 
+import UserGrowthChart from "../components/customers/CustomerGrowthChart";
+import UserActivityHeatmap from "../components/customers/CustomerActivityHeatmap";
+import UserDemographicsChart from "../components/customers/CustomerDemographicsChart";
+
 
 const customersStats = {
 	totalUsers: 1300,
@@ -53,7 +57,11 @@ const CustomersPage = () => {
 				</motion.div>
 
 				<CustomersTable />
-
+				<div className='grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8'>
+					<UserGrowthChart />
+					<UserActivityHeatmap />
+					<UserDemographicsChart />
+				</div>
 			</main>
 		</div>
 	);

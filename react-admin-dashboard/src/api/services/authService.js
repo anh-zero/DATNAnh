@@ -1,40 +1,51 @@
 import api from '../axios';
 
+export const setToken = (token) => {
+  if (token) {
+    localStorage.setItem('token', token);
+    console.log('[authService] Token set in localStorage:', token ? `${token.substring(0, 20)}...` : 'No token was provided to setToken');
+  } else {
+    localStorage.removeItem('token');
+    console.log('[authService] Token removed from localStorage via setToken.');
+  }
+};
+
 export const loginAdmin = async (credentials) => {
+  const { username, password } = credentials;
+  // Backend expects loginIdentifier and mat_khau
+  const payload = {
+    loginIdentifier: username, // Assuming username can be email or ten_dang_nhap
+    mat_khau: password,
+  };
+  console.log('[authService] Sending login payload:', payload);
+
   try {
-    // Backend expects 'loginIdentifier' and 'mat_khau'
-    const payload = {
-      loginIdentifier: credentials.username, // Assuming 'username' from LoginPage can be username or email
-      mat_khau: credentials.password,
-    };
-    console.log('Sending login payload:', payload);
-    const response = await api.post('/api/auth/login', payload); // Endpoint seems to be /api/admin/login based on your backend structure
+    const response = await api.post('api/auth/login', payload);
+    console.log('[authService] Login API Response:', response.data);
 
-    console.log('Login API Response:', response.data);
+    if (response.data && response.data.success && response.data.data && response.data.data.token) {
+      const token = response.data.data.token;
+      const user = response.data.data.user;
 
-    // Backend response structure: { success: true, message: "...", data: { token: "...", user: { id_nguoi_dung, ten_dang_nhap, email_dang_nhap, vai_tro } } }
-    if (response.data.success && response.data.data && response.data.data.token) {
-      const { token, user } = response.data.data;
-      localStorage.setItem('token', token);
+      setToken(token); // This will now log when token is set
 
-      // Store user information if needed
       if (user) {
-        localStorage.setItem('user', JSON.stringify(user)); // Store the whole user object
-        localStorage.setItem('userRole', user.vai_tro || 'user'); // Default to 'user' if vai_tro is not present
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('userRole', user.vai_tro || 'user');
         localStorage.setItem('userId', user.id_nguoi_dung);
         localStorage.setItem('username', user.ten_dang_nhap);
+        console.log('[authService] User details stored in localStorage for:', user.ten_dang_nhap);
       } else {
-        // Fallback if user object is not directly available but role might be elsewhere (less likely with current backend)
-        localStorage.setItem('userRole', 'admin'); // Or derive from token if possible/needed
+        console.warn('[authService] User object missing in login response data.');
+        // Fallback or default role setting if necessary, though backend should provide user details
+        localStorage.setItem('userRole', 'admin');
       }
       return true;
     }
-    // If success is false or token is missing in the expected place
-    console.error('Login failed:', response.data.message || 'Token or user data missing in response.');
+    console.error('[authService] Login failed due to unsuccessful response or missing token/user data:', response.data.message || 'No specific message.');
     return false;
   } catch (error) {
-    console.error('Đăng nhập thất bại:', error.response?.data || error.message || error);
-    // Rethrow the error so the component can catch it and display a message
+    console.error('[authService] Đăng nhập thất bại (exception):', error.response?.data || error.message || error);
     throw error.response?.data || error;
   }
 };
@@ -47,7 +58,7 @@ export const logoutAdmin = () => {
   localStorage.removeItem('userRole');
   localStorage.removeItem('userId');
   localStorage.removeItem('username');
-  
+
   // Chuyển hướng về trang login
   window.location.replace('/login');
 };
@@ -56,7 +67,7 @@ export const logoutAdmin = () => {
 export const isTokenValid = () => {
   const token = localStorage.getItem('token');
   if (!token) return false;
-  
+
   try {
     // Nếu bạn sử dụng JWT, có thể decode và kiểm tra expiry
     // const payload = JSON.parse(atob(token.split('.')[1]));
