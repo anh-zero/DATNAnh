@@ -11,6 +11,8 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import OverviewPage from "./pages/OverviewPage";
 import ToursPage from './pages/ToursPage';
 import TourSchedulesPage from './pages/TourSchedulesPage';
+import LocationsPage from './pages/LocationsPage';
+import PartnersPage from './pages/PartnersPage'; // Đảm bảo import đúng tên file
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -128,6 +130,26 @@ function App() {
           <div className='flex h-screen bg-theme-background text-theme-text-primary overflow-hidden'>
             <Sidebar />
             <TourSchedulesPage />
+          </div>
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+      <Route path="/locations" element={
+        isAuthenticated ? (
+          <div className='flex h-screen bg-theme-background text-theme-text-primary overflow-hidden'>
+            <Sidebar />
+            <LocationsPage />
+          </div>
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+      <Route path="/partners" element={
+        isAuthenticated ? (
+          <div className='flex h-screen bg-theme-background text-theme-text-primary overflow-hidden'>
+            <Sidebar />
+            <PartnersPage />
           </div>
         ) : (
           <Navigate to="/login" replace />

@@ -1,5 +1,5 @@
 const partnerService = require('../services/doitac_service');
-const { successResponse, errorResponse, paginatedResponse } = require('../utils/api_response');
+const { successResponse, errorResponse, paginatedResponse,paginatedResponseObj } = require('../utils/api_response');
 const { body, param, query } = require('express-validator');
 
 const createPartnerValidationRules = () => [
@@ -131,7 +131,7 @@ const DoiTacController = {
             const partners = result.partners || [];
             const totalCount = result.totalCount || 0;
 
-            return paginatedResponse({
+            return paginatedResponseObj({
                 res,
                 message: 'Lấy danh sách đối tác thành công.',
                 data: partners,
@@ -188,7 +188,7 @@ const DoiTacController = {
 
             const result = await partnerService.getPartnersByLocationId(queryParams);
 
-return paginatedResponse({
+return paginatedResponseObj({
             res: res,
             message: `Lấy danh sách đối tác tại địa điểm ID ${id_dia_diem} thành công`,
             data: result.partners,

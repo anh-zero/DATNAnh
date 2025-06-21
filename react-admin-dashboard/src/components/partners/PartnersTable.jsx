@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Search, ArrowDownUp, Edit, Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
-import { getAllTours, deleteTour, getTourById } from '../../api/services/tourService';
+import { getAllPartners, deletePartner, getPartnerById, updatePartner, createPartner } from '../../api/services/partnerService';
 import { formatDate } from '../../utils/formatter';
-import TourFormModal from './TourFormModal';
-import TourDetailsModal from './TourDetailsModal';
+import PartnerFormModal from './PartnerFormModal';
+import PartnerDetailsModal from './PartnerDetailsModal';
 
 const ITEMS_PER_PAGE = 10; // Sử dụng 10 mục mỗi trang
 
-const ToursTable = () => {
+const PartnersTable = () => {
     // State variables
-    const [tours, setTours] = useState([]);
+    const [partners, setPartners] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [error, setError] = useState(null);
@@ -29,18 +29,17 @@ const ToursTable = () => {
     // Modals
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-    const [editingTour, setEditingTour] = useState(null);
-    const [viewingTour, setViewingTour] = useState(null);
+    const [editingPartner, setEditingPartner] = useState(null);
+    const [viewingPartner, setViewingPartner] = useState(null);
 
     // Thêm useRef cho input tìm kiếm
     const searchInputRef = useRef(null);
 
-    // Fetch tours with parameters
-    const fetchTours = useCallback(async () => {
+    // Fetch partners with parameters
+    const fetchPartners = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
         try {
-            setError(null);
-            setIsLoading(true);
-
             const params = {
                 page: currentPage,
                 limit: ITEMS_PER_PAGE,
@@ -49,44 +48,45 @@ const ToursTable = () => {
                 order
             };
 
-            const response = await getAllTours(params);
+            const response = await getAllPartners(params);
 
-            if (response.data?.tours) {
-                setTours(response.data.tours);
+            // Sửa dòng này - truy cập đúng cấu trúc dữ liệu
+            setPartners(response.data?.partners || []);
 
-                // Tính toán tổng số trang và tổng số mục
-                if (response.pagination) {
-                    setTotalPages(response.pagination.totalPages || 1);
-                    setTotalItems(response.pagination.totalItems || 0);
-                }
+            if (response.pagination) {
+                setTotalPages(response.pagination.totalPages || 1);
+                setTotalItems(response.pagination.totalItems || 0);
+                setCurrentPage(response.pagination.currentPage || 1);
             } else {
-                setTours([]);
-                setTotalPages(1);
-                setTotalItems(0);
+                // Fallback if pagination object is not present
+                setTotalPages(Math.ceil((response.data?.partners?.length || 0) / ITEMS_PER_PAGE) || 1);
+                setTotalItems(response.data?.partners?.length || 0);
             }
         } catch (err) {
-            const errorMessage = err.message || "Không thể tải dữ liệu tours.";
+            const errorMessage = err.message || (err.response?.data?.message) || "Không thể tải dữ liệu đối tác.";
             setError(errorMessage);
-            console.error("Tour loading error:", err);
+            console.error("Partners loading error:", err);
         } finally {
             setIsLoading(false);
         }
     }, [currentPage, searchTerm, sortBy, order]);
 
     useEffect(() => {
-        fetchTours();
-    }, [fetchTours]);
+        fetchPartners();
+    }, [fetchPartners]);
 
     // Tối ưu hàm handleSearchChange
     const handleSearchChange = (e) => {
         const value = e.target.value;
         setSearchTerm(value);
 
+        // Đảm bảo không gọi API quá nhiều
         if (timeoutId) clearTimeout(timeoutId);
 
         const newTimeoutId = setTimeout(() => {
-            setCurrentPage(1);
+            // Chỉ gọi API và set loading khi cần thiết
             setIsLoading(true);
+            setCurrentPage(1);
 
             const params = {
                 page: 1,
@@ -96,70 +96,85 @@ const ToursTable = () => {
                 order
             };
 
-            getAllTours(params).then(response => {
-                setTours(response.data?.tours || []);
-                if (response.pagination) {
-                    setTotalPages(response.pagination.totalPages || 1);
-                    setTotalItems(response.pagination.totalItems || 0);
-                }
+            getAllPartners(params).then(response => {
+                // Cập nhật nhiều state trong một lần để giảm re-render
+                setPartners(response.data?.partners || []);
+                setTotalPages(response.pagination?.totalPages || 1);
+                setTotalItems(response.pagination?.totalItems || 0);
                 setIsLoading(false);
             }).catch(err => {
-                const errorMessage = err.message || "Không thể tải dữ liệu tours.";
+                const errorMessage = err.message || "Không thể tải dữ liệu đối tác.";
                 setError(errorMessage);
-                console.error("Tour loading error:", err);
+                console.error("Partner loading error:", err);
                 setIsLoading(false);
             });
-        }, 300);
+        }, 300); // Đợi 300ms để tránh gọi API quá nhiều
 
         setTimeoutId(newTimeoutId);
     };
 
     const handleSort = (field) => {
-        const newOrder = sortBy === field && order === 'ASC' ? 'DESC' : 'ASC';
+        const newOrder = sortBy === field && order === "ASC" ? "DESC" : "ASC";
         setSortBy(field);
         setOrder(newOrder);
+        setCurrentPage(1); // Reset to first page on new sort
     };
 
-    const handleDelete = async (tourId, e) => {
-        e.stopPropagation();
-        if (window.confirm('Bạn có chắc chắn muốn xóa tour này?')) {
+    const handleDelete = async (partnerId, e) => {
+        if (e) e.stopPropagation(); // Prevent opening details modal
+        if (window.confirm("Bạn có chắc chắn muốn xóa đối tác này? Thao tác này có thể không thành công nếu đối tác đang được sử dụng trong các dịch vụ.")) {
             try {
-                await deleteTour(tourId);
-                alert('Xóa tour thành công');
-                fetchTours();
+                setIsLoading(true);
+                const response = await deletePartner(partnerId);
+                alert(response.message || "Đối tác đã được xóa thành công.");
+
+                // Refresh data: if last item on a page, go to prev page
+                if (partners.length === 1 && currentPage > 1) {
+                    setCurrentPage(currentPage - 1);
+                } else {
+                    fetchPartners(); // Otherwise, just refetch current page
+                }
             } catch (err) {
-                alert(`Lỗi khi xóa tour: ${err.message}`);
+                const errorMsg = err.message || (err.response?.data?.message) || "Lỗi không xác định khi xóa đối tác.";
+                setError("Lỗi khi xóa đối tác: " + errorMsg);
+                alert("Lỗi khi xóa đối tác: " + errorMsg);
+                console.error(err);
+            } finally {
+                setIsLoading(false);
             }
         }
     };
 
     const handleOpenCreateModal = () => {
-        setEditingTour(null);
+        setEditingPartner(null);
         setIsFormModalOpen(true);
     };
 
-    const handleOpenEditModal = (tour, e) => {
-        e.stopPropagation();
-        setEditingTour(tour);
+    const handleOpenEditModal = (partner, e) => {
+        if (e) e.stopPropagation(); // Prevent opening details modal
+        setEditingPartner(partner);
         setIsFormModalOpen(true);
     };
 
     const onCloseFormModal = () => {
         setIsFormModalOpen(false);
-        setEditingTour(null);
-        fetchTours();
+        setEditingPartner(null);
     };
 
-    const handleOpenDetailsModal = async (tourId) => {
+    const handleOpenDetailsModal = async (partnerId) => {
+        setIsLoadingDetails(true);
         try {
-            setIsLoadingDetails(true);
-            const tourDetails = await getTourById(tourId);
-            setViewingTour(tourDetails);
-            setIsDetailsModalOpen(true);
+            const response = await getPartnerById(partnerId);
+            if (response.success && response.data) {
+                setViewingPartner(response.data);
+                setIsDetailsModalOpen(true);
+            } else {
+                throw new Error(response.message || "Không thể tải chi tiết đối tác.");
+            }
         } catch (err) {
-            setError(err.message || "Không thể tải chi tiết tour.");
-            console.error("Fetch tour details error:", err);
-            alert(err.message || "Không thể tải chi tiết tour.");
+            setError(err.message || "Không thể tải chi tiết đối tác.");
+            console.error("Fetch partner details error:", err);
+            alert(err.message || "Không thể tải chi tiết đối tác.");
         } finally {
             setIsLoadingDetails(false);
         }
@@ -167,49 +182,67 @@ const ToursTable = () => {
 
     const onCloseDetailsModal = () => {
         setIsDetailsModalOpen(false);
-        setViewingTour(null);
+        setViewingPartner(null);
+    };
+
+    const handleFormSubmit = async (formDataFromModal) => {
+        try {
+            if (editingPartner && editingPartner.id_doi_tac) {
+                const response = await updatePartner(editingPartner.id_doi_tac, formDataFromModal);
+                alert(response.message || "Đối tác đã được cập nhật thành công.");
+            } else {
+                const response = await createPartner(formDataFromModal);
+                alert(response.message || "Đối tác đã được tạo thành công.");
+            }
+            fetchPartners(); // Refresh the table
+            onCloseFormModal(); // Close modal on success
+        } catch (err) {
+            throw err; // Re-throw to be caught by form modal's submit handler
+        }
     };
 
     const renderSortIcon = (field) => {
-        if (sortBy === field) {
+        const cleanField = field.replace('dt.', '');
+        if (sortBy === cleanField) {
             return order === "ASC" ? " ▲" : " ▼";
         }
         return <ArrowDownUp size={14} className="inline ml-1 opacity-40" />;
     };
 
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
     return (
-        <motion.div className="bg-theme-surface shadow-lg rounded-xl p-6 border border-theme-border relative"
+        <motion.div
+            className="bg-theme-surface shadow-lg rounded-xl p-6 border border-theme-border relative"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}>
+            transition={{ delay: 0.1 }}
+        >
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                <h2 className="text-xl font-semibold text-theme-text-primary">Danh sách Tour</h2>
+                <h2 className="text-xl font-semibold text-theme-text-primary">Danh sách Đối tác</h2>
 
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                     <div className="relative w-full sm:w-64">
                         <input
-                            ref={searchInputRef}
                             type="text"
-                            placeholder="Tìm kiếm tour..."
+                            placeholder="Tìm kiếm đối tác..."
                             className="bg-theme-background border border-theme-border px-4 py-2 pr-10 w-full rounded-md focus:outline-none focus:ring-2 focus:ring-theme-primary"
                             value={searchTerm}
                             onChange={handleSearchChange}
                             disabled={isLoading}
-                            key="tour-search"
+                            key="partner-search"  // Thêm key cố định
+                            ref={(input) => input && document.activeElement === document.body && input.focus()}  // Auto focus nếu chưa có focus khác
                         />
                         <Search
                             className="absolute top-2.5 right-3 text-theme-text-secondary"
                             size={18}
                         />
                     </div>
+
                     <button
-                        className="flex items-center gap-1 bg-theme-primary hover:bg-theme-primary/90 text-white py-2 px-4 rounded-lg whitespace-nowrap justify-center"
                         onClick={handleOpenCreateModal}
+                        className="flex items-center gap-1 bg-theme-primary hover:bg-theme-primary/90 text-white py-2 px-4 rounded-lg whitespace-nowrap justify-center"
                         disabled={isLoading}
                     >
-                        <span className="hidden sm:inline">Thêm tour</span>
+                        <span className="hidden sm:inline">Thêm đối tác</span>
                         <span className="sm:hidden">+ Mới</span>
                     </button>
                 </div>
@@ -226,9 +259,9 @@ const ToursTable = () => {
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-theme-primary border-t-transparent"></div>
                     <p className="mt-3 text-theme-text-secondary">Đang tải dữ liệu...</p>
                 </div>
-            ) : tours.length === 0 ? (
+            ) : partners.length === 0 ? (
                 <div className="text-center py-10 text-theme-text-secondary">
-                    {searchTerm ? "Không tìm thấy tour nào phù hợp với tìm kiếm của bạn." : "Chưa có tour nào."}
+                    {searchTerm ? "Không tìm thấy đối tác nào phù hợp với tìm kiếm của bạn." : "Chưa có đối tác nào."}
                 </div>
             ) : (
                 <div className="overflow-x-auto">
@@ -237,27 +270,31 @@ const ToursTable = () => {
                             <tr>
                                 <th
                                     className="px-6 py-3 text-left text-xs font-medium text-theme-text-secondary uppercase tracking-wider cursor-pointer"
-                                    onClick={() => handleSort('id_san_pham_tour')}
+                                    onClick={() => handleSort('id_doi_tac')}
                                 >
-                                    ID {renderSortIcon('id_san_pham_tour')}
+                                    ID {renderSortIcon('id_doi_tac')}
                                 </th>
                                 <th
                                     className="px-6 py-3 text-left text-xs font-medium text-theme-text-secondary uppercase tracking-wider cursor-pointer"
-                                    onClick={() => handleSort('ten_tour')}
+                                    onClick={() => handleSort('ten_doi_tac')}
                                 >
-                                    Tên Tour {renderSortIcon('ten_tour')}
+                                    Tên đối tác {renderSortIcon('ten_doi_tac')}
                                 </th>
                                 <th
                                     className="px-6 py-3 text-left text-xs font-medium text-theme-text-secondary uppercase tracking-wider cursor-pointer"
-                                    onClick={() => handleSort('thoi_gian_du_kien')}
+                                    onClick={() => handleSort('email')}
                                 >
-                                    Thời gian {renderSortIcon('thoi_gian_du_kien')}
+                                    Email {renderSortIcon('email')}
+                                </th>
+                                <th
+                                    className="px-6 py-3 text-left text-xs font-medium text-theme-text-secondary uppercase tracking-wider">
+                                    Số điện thoại {/* Đã loại bỏ tính năng sắp xếp */}
                                 </th>
                                 <th
                                     className="px-6 py-3 text-left text-xs font-medium text-theme-text-secondary uppercase tracking-wider cursor-pointer"
-                                    onClick={() => handleSort('ngay_cap_nhat')}
+                                    onClick={() => handleSort('ngay_tao')}
                                 >
-                                    Cập nhật {renderSortIcon('ngay_cap_nhat')}
+                                    Ngày tạo {renderSortIcon('ngay_tao')}
                                 </th>
                                 <th className="px-6 py-3 text-center text-xs font-medium text-theme-text-secondary uppercase tracking-wider whitespace-nowrap">
                                     Hành động
@@ -265,39 +302,20 @@ const ToursTable = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-theme-border">
-                            {tours.map(tour => (
+                            {partners.map((partner) => (
                                 <motion.tr
-                                    key={tour.id_san_pham_tour}
-                                    onClick={() => handleOpenDetailsModal(tour.id_san_pham_tour)}
-                                    className="hover:bg-theme-background/50 cursor-pointer"
+                                    key={partner.id_doi_tac}
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
+                                    className="hover:bg-theme-background/50 cursor-pointer"
+                                    onClick={() => handleOpenDetailsModal(partner.id_doi_tac)}
                                 >
-                                    <td className="px-6 py-4 whitespace-nowrap">{tour.id_san_pham_tour}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{partner.id_doi_tac}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap font-medium">{partner.ten_doi_tac}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{partner.email || "—"}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{partner.so_dien_thoai || "—"}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            {tour.url_anh_bia && (
-                                                <div className="h-8 w-8 mr-3 flex-shrink-0">
-                                                    <img
-                                                        src={tour.url_anh_bia.startsWith('http')
-                                                            ? tour.url_anh_bia
-                                                            : `${API_BASE_URL}${tour.url_anh_bia}`}
-                                                        alt={tour.ten_tour}
-                                                        className="h-full w-full rounded object-cover"
-                                                        onError={(e) => {
-                                                            e.target.src = 'https://via.placeholder.com/150?text=No+Image';
-                                                        }}
-                                                    />
-                                                </div>
-                                            )}
-                                            <div className="font-medium text-theme-text-primary">{tour.ten_tour}</div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {tour.thoi_gian_du_kien || "—"}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {formatDate(tour.ngay_cap_nhat, {
+                                        {formatDate(partner.ngay_tao, {
                                             year: 'numeric',
                                             month: '2-digit',
                                             day: '2-digit',
@@ -307,14 +325,14 @@ const ToursTable = () => {
                                         <div className="flex items-center justify-center space-x-3">
                                             <button
                                                 className="text-blue-500 hover:text-blue-700 p-1"
-                                                onClick={(e) => handleOpenEditModal(tour, e)}
+                                                onClick={(e) => { e.stopPropagation(); handleOpenEditModal(partner, e); }}
                                                 title="Sửa"
                                             >
                                                 <Edit size={18} />
                                             </button>
                                             <button
                                                 className="text-red-500 hover:text-red-400 p-1"
-                                                onClick={(e) => handleDelete(tour.id_san_pham_tour, e)}
+                                                onClick={(e) => { e.stopPropagation(); handleDelete(partner.id_doi_tac, e); }}
                                                 title="Xóa"
                                             >
                                                 <Trash2 size={18} />
@@ -332,7 +350,7 @@ const ToursTable = () => {
             {totalItems > 0 && totalPages > 1 && (
                 <div className="mt-6 flex flex-col sm:flex-row justify-between items-center text-sm text-theme-text-secondary">
                     <div className="mb-2 sm:mb-0">
-                        Hiển thị {tours.length} trên tổng số {totalItems} tour. (Trang {currentPage}/{totalPages})
+                        Hiển thị {partners.length} trên tổng số {totalItems} đối tác. (Trang {currentPage}/{totalPages})
                     </div>
                     {totalPages > 1 && (
                         <div className="flex items-center space-x-1">
@@ -376,25 +394,28 @@ const ToursTable = () => {
                 </div>
             )}
 
-            {/* Modals */}
+            {/* Form Modal */}
             {isFormModalOpen && (
-                <TourFormModal
-                    isOpen={isFormModalOpen}
+                <PartnerFormModal
+                    partner={editingPartner}
                     onClose={onCloseFormModal}
-                    tour={editingTour}
+                    onSubmit={handleFormSubmit}
                 />
             )}
 
-            {isDetailsModalOpen && (
-                <TourDetailsModal
-                    isOpen={isDetailsModalOpen}
+            {/* Details Modal */}
+            {isDetailsModalOpen && viewingPartner && (
+                <PartnerDetailsModal
+                    partner={viewingPartner}
                     onClose={onCloseDetailsModal}
-                    tour={viewingTour}
-                    isLoading={isLoadingDetails}
+                    onEdit={(partner) => {
+                        onCloseDetailsModal();
+                        handleOpenEditModal(partner);
+                    }}
                 />
             )}
         </motion.div>
     );
 };
 
-export default ToursTable;
+export default PartnersTable;

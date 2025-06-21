@@ -239,7 +239,7 @@ const TourProvidedServiceService = {
     },
 
     // Thêm method getServicesByPartnerId
-  getServicesByPartnerId: async (queryParams) => {
+    getServicesByPartnerId: async (queryParams) => {
         try {
             const { id_doi_tac, limit, offset, sortBy, order } = queryParams;
 
@@ -281,6 +281,29 @@ const TourProvidedServiceService = {
         } catch (error) {
             console.error("Error in TourProvidedServiceService.getServicesByPartnerId:", error);
             //โยน lỗi để controller bắt được
+            throw error;
+        }
+    },
+
+    // Thêm method mới vào TourProvidedServiceService
+    getServiceTypeStatistics: async () => {
+        try {
+            const sql = `
+                SELECT 
+                    COALESCE(loai_dich_vu, 'Khác') as loai_dich_vu,
+                    COUNT(*) as so_luong
+                FROM 
+                    dichvutour
+                GROUP BY 
+                    loai_dich_vu
+                ORDER BY 
+                    so_luong DESC
+            `;
+
+            const [results] = await pool.query(sql);
+            return results;
+        } catch (error) {
+            console.error("Error in TourProvidedServiceService.getServiceTypeStatistics:", error);
             throw error;
         }
     }

@@ -24,7 +24,7 @@ const PartnerModel = {
             const [result] = await PartnerModel._query(sql, [
                 ten_doi_tac, dia_chi, so_dien_thoai, email, mo_ta_chi_tiet_doi_tac, ma_so_thue, id_dia_diem
             ], connection);
-            
+
             // Chỉ trả về các trường thực sự có trong DB
             const createdPartnerData = {
                 id_doi_tac: result.insertId,
@@ -43,48 +43,50 @@ const PartnerModel = {
         }
     },
 
-    findAll: async ({ limit, offset, searchTerm = '', sortBy = 'ngay_tao', order = 'DESC' /*, dang_hop_tac = undefined // REMOVED */ }, connection = null) => {
+    findAll: async ({ limit, offset, searchTerm = '', sortBy = 'ngay_tao', order = 'DESC' }, connection = null) => {
         let baseSql = `FROM doitac d LEFT JOIN diadiem dd ON d.id_dia_diem = dd.id_dia_diem WHERE 1=1`;
         const params = [];
         let selectFields = 'd.*, dd.ten_dia_diem as ten_dia_diem_doi_tac';
 
         if (searchTerm) {
-            // Cập nhật tìm kiếm nếu các trường đó không còn
-            baseSql += " AND (d.ten_doi_tac LIKE ? OR d.email LIKE ? OR d.so_dien_thoai LIKE ? OR d.ma_so_thue LIKE ? OR d.dia_chi_doi_tac LIKE ? OR d.mo_ta_chi_tiet_doi_tac LIKE ?)";
-            params.push(`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`);
+            baseSql += " AND (d.ten_doi_tac LIKE ? OR d.email LIKE ? OR d.so_dien_thoai LIKE ? OR d.ma_so_thue LIKE ? OR d.dia_chi LIKE ? OR d.mo_ta_chi_tiet_doi_tac LIKE ?)";
+            const searchParam = `%${searchTerm}%`;
+            params.push(searchParam, searchParam, searchParam, searchParam, searchParam, searchParam);
         }
-
-        // if (dang_hop_tac !== undefined) { // REMOVED Filter logic for dang_hop_tac
-        //     baseSql += " AND d.dang_hop_tac = ?";
-        //     params.push(dang_hop_tac);
-        // }
 
         const countSql = `SELECT COUNT(d.id_doi_tac) as totalItems ${baseSql}`;
 
-        const allowedSortColumns = ['id_doi_tac', 'ten_doi_tac', 'email', 'ngay_tao', 'ma_so_thue']; // REMOVED dang_hop_tac
-        let validSortBy = 'd.ngay_tao'; // Default sort
-        if (allowedSortColumns.includes(sortBy)) {
-            // Ensure sortBy is a valid column name from doitac table to prevent SQL injection if not using d. prefix
-            if (sortBy.startsWith('d.')) { // If already prefixed
+        // Xác định cột sắp xếp hợp lệ
+        const allowedSortColumns = ['id_doi_tac', 'ten_doi_tac', 'email', 'ngay_tao', 'ma_so_thue', 'dia_chi'];
+        let validSortBy = 'd.ngay_tao'; // Mặc định
+
+        // Xử lý sortBy để thêm tiền tố bảng nếu cần
+        if (sortBy) {
+            // Nếu đã có tiền tố bảng
+            if (sortBy.startsWith('d.') && allowedSortColumns.includes(sortBy.substring(2))) {
                 validSortBy = sortBy;
-            } else if (['id_doi_tac', 'ten_doi_tac', 'email', 'ngay_tao', 'ma_so_thue'].includes(sortBy)) { // Check against actual column names
+            }
+            // Nếu không có tiền tố bảng
+            else if (allowedSortColumns.includes(sortBy)) {
                 validSortBy = `d.${sortBy}`;
             }
         }
-        const sortOrder = (order.toUpperCase() === 'DESC') ? 'DESC' : 'ASC';
 
-        const dataSql = `SELECT ${selectFields} ${baseSql} ORDER BY ${pool.escapeId(validSortBy)} ${sortOrder} LIMIT ? OFFSET ?`;
+        // Xác định hướng sắp xếp hợp lệ
+        const sortOrder = (order && order.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
+
+        // Xây dựng câu truy vấn với ORDER BY
+        const dataSql = `SELECT ${selectFields} ${baseSql} ORDER BY ${validSortBy} ${sortOrder} LIMIT ? OFFSET ?`;
         const dataParams = [...params, parseInt(limit), parseInt(offset)];
 
+        // Thực thi câu truy vấn
+        const [countRows] = await PartnerModel._query(countSql, params, connection);
+        const [rows] = await PartnerModel._query(dataSql, dataParams, connection);
 
-        try {
-            const [countRows] = await PartnerModel._query(countSql, params, connection);
-            const [rows] = await PartnerModel._query(dataSql, dataParams, connection);
-            return { partners: rows, totalItems: countRows[0].totalItems };
-        } catch (error) {
-            console.error("Error in PartnerModel.findAll:", error);
-            throw error;
-        }
+        return {
+            partners: rows,
+            totalItems: countRows[0].totalItems
+        };
     },
 
     findById: async (id_doi_tac, connection = null) => {
@@ -102,10 +104,7 @@ const PartnerModel = {
     },
 
     findByEmail: async (email, connection = null) => {
-        const sql = `SELECT d.*, dd.ten_dia_diem as ten_dia_diem_doi_tac
-                     FROM doitac d
-                     LEFT JOIN diadiem dd ON d.id_dia_diem = dd.id_dia_diem
-                     WHERE d.email = ?`;
+        const sql = "SELECT id_doi_tac, email FROM doitac WHERE email = ?";
         try {
             const [rows] = await PartnerModel._query(sql, [email], connection);
             return rows[0];
@@ -116,10 +115,7 @@ const PartnerModel = {
     },
 
     findByMST: async (ma_so_thue, connection = null) => {
-        const sql = `SELECT d.*, dd.ten_dia_diem as ten_dia_diem_doi_tac
-                     FROM doitac d
-                     LEFT JOIN diadiem dd ON d.id_dia_diem = dd.id_dia_diem
-                     WHERE d.ma_so_thue = ?`;
+        const sql = "SELECT id_doi_tac, ma_so_thue FROM doitac WHERE ma_so_thue = ?";
         try {
             const [rows] = await PartnerModel._query(sql, [ma_so_thue], connection);
             return rows[0];
@@ -176,53 +172,71 @@ const PartnerModel = {
             if (error.statusCode) throw error;
             throw new Error(`Database error during partner deletion: ${error.message}`);
         }
-    }
-};
+    },
 
-const DoiTacModel = {
-    // Các phương thức khác...
-
-    findAll: async (options = {}) => {
+    // Thêm phương thức countDocuments 
+    countDocuments: async (query = {}, connection = null) => {
         try {
-            // Đảm bảo các giá trị hợp lệ
-            const limit = Number(options.limit) || 10;
-            const offset = Number(options.offset) || 0;
-            const searchTerm = options.searchTerm || '';
-            
-            let whereClause = 'WHERE 1=1 ';
+            let sqlQuery = 'SELECT COUNT(*) as total FROM doitac WHERE 1=1';
             const params = [];
-            
-            if (searchTerm) {
-                // Thay đổi dia_chi_doi_tac thành dia_chi
-                whereClause += 'AND (d.ten_doi_tac LIKE ? OR d.dia_chi LIKE ? OR d.mo_ta_chi_tiet_doi_tac LIKE ?) ';
-                params.push(`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`);
+
+            // Xử lý các điều kiện query nếu cần
+            if (query.searchTerm) {
+                sqlQuery += " AND (ten_doi_tac LIKE ? OR email LIKE ? OR so_dien_thoai LIKE ? OR ma_so_thue LIKE ? OR dia_chi LIKE ?)";
+                const searchParam = `%${query.searchTerm}%`;
+                params.push(searchParam, searchParam, searchParam, searchParam, searchParam);
             }
-            
-            const query = `
-                SELECT d.*, dd.ten_dia_diem 
-                FROM doitac d 
-                LEFT JOIN diadiem dd ON d.id_dia_diem = dd.id_dia_diem 
-                ${whereClause}
-                ORDER BY d.ngay_tao DESC
-                LIMIT ? OFFSET ?
-            `;
-            
-            console.log("SQL query:", query); // Debug log
-            console.log("SQL params:", [...params, limit, offset]); // Debug log
-            
-            const [results] = await PartnerModel._query(
-                query,
-                [...params, limit, offset]
-            );
-            
-            return results || [];
+
+            const [result] = await PartnerModel._query(sqlQuery, params, connection);
+            return result[0].total;
         } catch (error) {
-            console.error("Error in PartnerModel.findAll:", error);
+            console.error("Error in PartnerModel.countDocuments:", error);
             throw error;
         }
     },
 
-    // Các phương thức khác...
+    // Thêm method find tương thích với mongo-style API
+    find: async (query = {}, options = {}, connection = null) => {
+        try {
+            let sqlQuery = 'SELECT * FROM doitac WHERE 1=1';
+            const params = [];
+
+            // Xử lý các điều kiện query
+            if (query.searchTerm) {
+                sqlQuery += " AND (ten_doi_tac LIKE ? OR email LIKE ? OR so_dien_thoai LIKE ? OR ma_so_thue LIKE ? OR dia_chi LIKE ?)";
+                const searchParam = `%${query.searchTerm}%`;
+                params.push(searchParam, searchParam, searchParam, searchParam, searchParam);
+            }
+
+            // Xử lý sắp xếp
+            if (options.sort) {
+                const sortField = Object.keys(options.sort)[0];
+                const sortOrder = options.sort[sortField] === 1 ? 'ASC' : 'DESC';
+
+                // Đảm bảo sortField là tên cột hợp lệ để tránh SQL injection
+                const validSortFields = ['id_doi_tac', 'ten_doi_tac', 'email', 'ngay_tao', 'ma_so_thue', 'dia_chi'];
+                if (validSortFields.includes(sortField)) {
+                    sqlQuery += ` ORDER BY ${sortField} ${sortOrder}`;
+                } else {
+                    sqlQuery += ' ORDER BY ngay_tao DESC'; // Default sort
+                }
+            } else {
+                sqlQuery += ' ORDER BY ngay_tao DESC'; // Default sort
+            }
+
+            // Xử lý phân trang
+            if (options.skip !== undefined && options.limit !== undefined) {
+                sqlQuery += ' LIMIT ? OFFSET ?';
+                params.push(parseInt(options.limit), parseInt(options.skip));
+            }
+
+            const [rows] = await PartnerModel._query(sqlQuery, params, connection);
+            return rows;
+        } catch (error) {
+            console.error("Error in PartnerModel.find:", error);
+            throw error;
+        }
+    }
 };
 
 module.exports = PartnerModel;

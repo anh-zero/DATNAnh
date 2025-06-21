@@ -1,5 +1,5 @@
 const TourProvidedServiceService = require('../services/dichvutour_service'); // Import service đã hoàn thiện
-const { successResponse, errorResponse, paginatedResponse } = require('../utils/api_response');
+const { successResponse, errorResponse, paginatedResponse, paginatedResponseObj } = require('../utils/api_response');
 const { body, param } = require('express-validator');
 
 // Validation rules cho việc thêm/cập nhật dịch vụ vào lịch trình
@@ -198,20 +198,29 @@ const TourProvidedServiceController = {
 
             const result = await TourProvidedServiceService.getServicesByPartnerId(queryParams);
 
-return paginatedResponse({
-    res: res,
-    message: `Lấy danh sách dịch vụ của đối tác ID ${id_doi_tac} thành công`,
-    data: result.services,
-    currentPage: parseInt(page),
-    totalCount: result.totalItems,
-    limit: parseInt(limit)
-});
+            return paginatedResponseObj({
+                res: res,
+                message: `Lấy danh sách dịch vụ của đối tác ID ${id_doi_tac} thành công`,
+                data: result.services,
+                currentPage: parseInt(page),
+                totalCount: result.totalItems,
+                limit: parseInt(limit)
+            });
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    // Thêm method mới vào controller
+    getServiceTypeStatistics: async (req, res, next) => {
+        try {
+            const statistics = await TourProvidedServiceService.getServiceTypeStatistics();
+            return successResponse(res, 'Lấy thống kê loại dịch vụ thành công.', statistics);
         } catch (error) {
             next(error);
         }
     }
 };
-
 module.exports = {
     ...TourProvidedServiceController,
     providedServiceValidationRules,

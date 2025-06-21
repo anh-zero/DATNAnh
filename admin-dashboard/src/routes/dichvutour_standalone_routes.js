@@ -32,7 +32,7 @@ router.get(
 router.put(
     '/:id_dich_vu_tour',
     param('id_dich_vu_tour').isInt({ min: 1 }).withMessage('ID dịch vụ không hợp lệ.'),
-    dichvuController.updateServiceValidationRules(), 
+    dichvuController.updateServiceValidationRules(),
     handleValidationErrors,
     dichvuController.updateServiceInSchedule
 );
@@ -43,6 +43,12 @@ router.delete(
     param('id_dich_vu_tour').isInt({ min: 1 }).withMessage('ID dịch vụ không hợp lệ.'),
     handleValidationErrors,
     dichvuController.removeServiceFromSchedule
+);
+
+// Thêm route mới
+router.get(
+    '/statistics',
+    dichvuController.getServiceTypeStatistics
 );
 
 module.exports = router;

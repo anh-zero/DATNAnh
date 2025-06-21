@@ -1,5 +1,5 @@
 const TourActivityService = require('../services/hoatdongtour_service');
-const { successResponse, errorResponse, paginatedResponse } = require('../utils/api_response');
+const { successResponse, errorResponse, paginatedResponse, paginatedResponseObj } = require('../utils/api_response');
 const { body, param } = require('express-validator');
 const handleValidationErrors = require('../middlewares/validation_middleware');
 const { formatTimeForDb } = require('../utils/date_utils'); // Import utility
@@ -192,7 +192,7 @@ const TourActivityController = {
 
             const result = await TourActivityService.getActivitiesByLocationId(queryParams);
 
-           return paginatedResponse({
+           return paginatedResponseObj({
     res: res,
     message: `Lấy danh sách hoạt động tại địa điểm ID ${id_dia_diem} thành công`,
     data: result.activities,

@@ -1,253 +1,346 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { X, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 import { createTour, updateTour } from '../../api/services/tourService';
-// import { getPartnersForSelect } from '../../api/services/partnerService'; // For partner selection later
+import { motion } from 'framer-motion';
 
-const TourFormModal = ({ tour, isOpen, onClose, onSubmit }) => {
-  const initialFormData = {
+const TourFormModal = ({ isOpen, onClose, tour = null }) => {
+  const [formData, setFormData] = useState({
     ten_tour: '',
     mo_ta_chi_tiet: '',
     thoi_gian_du_kien: '',
-    url_anh_bia: null, // Will hold existing image URL string or null
-    // partners: [], // For managing associated partners later: [{ id_doi_tac, loai_hop_tac, ghi_chu }]
-  };
+    url_anh_bia: ''
+  });
 
-  const [formData, setFormData] = useState(initialFormData);
-  const [selectedImageFile, setSelectedImageFile] = useState(null); // For new image file
-  const [imagePreview, setImagePreview] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  // const [partnerOptions, setPartnerOptions] = useState([]); // For partner selection later
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const API_BASE_URL_FOR_IMAGES = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+  const isEditing = !!tour;
 
   useEffect(() => {
-    if (isOpen) {
-      if (tour) {
-        setFormData({
-          ten_tour: tour.ten_tour || '',
-          mo_ta_chi_tiet: tour.mo_ta_chi_tiet || '',
-          thoi_gian_du_kien: tour.thoi_gian_du_kien || '',
-          url_anh_bia: tour.url_anh_bia || null,
-          // partners: tour.partners || [], // For partner management later
-        });
-        if (tour.url_anh_bia) {
-          setImagePreview(`${API_BASE_URL_FOR_IMAGES}${tour.url_anh_bia}`);
-        } else {
-          setImagePreview(null);
-        }
-        setSelectedImageFile(null); // Reset file input on open
-      } else {
-        setFormData(initialFormData);
-        setImagePreview(null);
-        setSelectedImageFile(null);
-      }
-      setError(null); // Clear previous errors
-    }
-  }, [isOpen, tour, API_BASE_URL_FOR_IMAGES]);
+    if (tour) {
+      setFormData({
+        ten_tour: tour.ten_tour || '',
+        mo_ta_chi_tiet: tour.mo_ta_chi_tiet || '',
+        thoi_gian_du_kien: tour.thoi_gian_du_kien || '',
+        url_anh_bia: tour.url_anh_bia || ''
+      });
 
-  // Example: Fetch partners for a select dropdown (implement later if needed)
-  // useEffect(() => {
-  //   if (isOpen) {
-  //     const fetchPartners = async () => {
-  //       try {
-  //         const partners = await getPartnersForSelect(); // This function needs to be in partnerService
-  //         setPartnerOptions(partners); // partners should be an array of { value, label }
-  //       } catch (err) {
-  //         console.error("Failed to fetch partners for select:", err);
-  //       }
-  //     };
-  //     fetchPartners();
-  //   }
-  // }, [isOpen]);
+      console.log("Tour data loaded:", {
+        id: tour.id_san_pham_tour,
+        name: tour.ten_tour,
+        originalImage: tour.url_anh_bia
+      });
+
+      if (tour.url_anh_bia) {
+        // Kiểm tra nếu URL hình ảnh là đường dẫn đầy đủ hoặc đường dẫn tương đối
+        if (tour.url_anh_bia.startsWith('http')) {
+          setImagePreview(tour.url_anh_bia);
+        } else {
+          const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+          setImagePreview(`${API_BASE_URL}${tour.url_anh_bia}`);
+          console.log("Image preview URL:", `${API_BASE_URL}${tour.url_anh_bia}`);
+        }
+      }
+    }
+  }, [tour]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    console.log(`Field '${name}' changed to:`, value);
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setSelectedImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-      setFormData(prev => ({ ...prev, url_anh_bia: null })); // Clear existing URL if new file is chosen
-    } else {
-      setSelectedImageFile(null);
-      // If clearing selection, and there was an existing image, restore its preview
-      if (tour && tour.url_anh_bia) {
-        setImagePreview(`${API_BASE_URL_FOR_IMAGES}${tour.url_anh_bia}`);
-        setFormData(prev => ({ ...prev, url_anh_bia: tour.url_anh_bia }));
-      } else {
-        setImagePreview(null);
-      }
+    if (!file) return;
+
+    console.log("Selected image:", {
+      name: file.name,
+      type: file.type,
+      size: `${(file.size / 1024).toFixed(2)} KB`
+    });
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      setError('Kích thước hình ảnh không được vượt quá 5MB');
+      return;
     }
-  };
-  
-  const handleRemoveImage = () => {
-    setSelectedImageFile(null);
-    setImagePreview(null);
-    setFormData(prev => ({ ...prev, url_anh_bia: null })); // Mark for removal or no image
-    // If there's a file input, clear its value
-    const fileInput = document.getElementById('url_anh_bia_file');
-    if (fileInput) {
-        fileInput.value = "";
-    }
+
+    setImageFile(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+      console.log("Image preview created");
+    };
+    reader.readAsDataURL(file);
   };
 
+  const removeImage = () => {
+    console.log("Image removed, previous url_anh_bia:", formData.url_anh_bia);
+    setImageFile(null);
+    setImagePreview('');
+    setFormData(prev => ({ ...prev, url_anh_bia: null }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    const data = new FormData();
-    data.append('ten_tour', formData.ten_tour);
-    data.append('mo_ta_chi_tiet', formData.mo_ta_chi_tiet);
-    data.append('thoi_gian_du_kien', formData.thoi_gian_du_kien);
-
-    if (selectedImageFile) {
-      data.append('url_anh_bia', selectedImageFile);
-    } else if (formData.url_anh_bia === null && tour?.url_anh_bia) {
-      // If url_anh_bia was explicitly set to null (meaning remove existing image)
-      // The backend should handle an empty or null url_anh_bia field as "remove" or "no change if not provided"
-      // Forcing it to null if user cleared it:
-      data.append('url_anh_bia', ''); // Send empty string to signify removal, backend needs to handle this
-    }
-    // If editing and no new image selected, and formData.url_anh_bia still holds the old URL,
-    // the backend PUT should ideally not require the image if it's not changing.
-    // If backend requires it, or to be explicit:
-    // else if (tour && formData.url_anh_bia) {
-    //    data.append('url_anh_bia_existing', formData.url_anh_bia); // Or handle this logic in backend
-    // }
-
-
-    // For partners (if implementing later):
-    // data.append('partners', JSON.stringify(formData.partners));
+    setIsSubmitting(true);
+    setError('');
 
     try {
-      if (tour && tour.id_san_pham_tour) {
-        await updateTour(tour.id_san_pham_tour, data);
-      } else {
-        await createTour(data);
+      // Tạo một bản sao mới của formData để tránh thay đổi state gốc
+      const dataToSubmit = { ...formData };
+
+      // XÓA url_anh_bia khỏi object dữ liệu gửi đi
+      // Đây là điểm quan trọng! Không gửi url_anh_bia hiện tại
+      delete dataToSubmit.url_anh_bia;
+
+      // Tạo FormData mới
+      const submitData = new FormData();
+
+      // Thêm các trường dữ liệu cơ bản
+      Object.keys(dataToSubmit).forEach(key => {
+        if (dataToSubmit[key]) {
+          submitData.append(key, dataToSubmit[key]);
+        }
+      });
+
+      // QUAN TRỌNG: Chỉ thêm file ảnh mới nếu có
+      if (imageFile) {
+        submitData.append('url_anh_bia', imageFile);
+        console.log("Adding new image:", imageFile.name, imageFile.size, "bytes");
       }
-      onSubmit(); // This will call handleFormSubmit in ToursTable to refresh and close
+
+      // Debug: Log các key trong FormData
+      console.log("FormData fields:", [...submitData.keys()]);
+
+      let response;
+      if (isEditing) {
+        response = await updateTour(tour.id_san_pham_tour, submitData);
+      } else {
+        response = await createTour(submitData);
+      }
+
+      console.log("Server response:", response);
+      alert(isEditing ? 'Cập nhật tour thành công!' : 'Thêm tour mới thành công!');
+      onClose();
     } catch (err) {
-      setError(err.message || 'Lưu tour không thành công. Vui lòng kiểm tra lại thông tin.');
-      console.error("Form submission error:", err);
+      console.error('Error submitting form:', err);
+      const errorMessage = err.errors?.[0]?.msg || err.message || 'Có lỗi xảy ra khi lưu dữ liệu';
+      setError(errorMessage);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
       <motion.div
-        className="bg-white dark:bg-theme-surface0 rounded-lg p-6 w-full max-w-2xl relative border border-theme-border max-h-[90vh] overflow-y-auto shadow-xl"
-        initial={{ opacity: 0, y: -50 }}
+        className="bg-theme-surface p-6 rounded-lg shadow-lg max-w-2xl w-full relative"
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -50 }}
       >
         <button
+          className="absolute top-4 right-4 text-theme-text-secondary hover:text-theme-text-primary"
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          disabled={isLoading}
         >
           <X size={24} />
         </button>
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-theme-text-primary mb-6">
-          {tour && tour.id_san_pham_tour ? 'Chỉnh sửa Sản phẩm Tour' : 'Thêm Sản phẩm Tour mới'}
+
+        <h2 className="text-xl font-semibold mb-6 pr-8">
+          {isEditing ? 'Chỉnh sửa Tour' : 'Thêm Tour mới'}
         </h2>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-700 dark:text-red-300 rounded-md text-sm">
-            <p><strong>Lỗi:</strong> {error}</p>
+          <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4">
+            {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-theme-text-secondary mb-1" htmlFor="ten_tour">
-              Tên Tour <span className="text-red-500">*</span>
-            </label>
-            <input type="text" name="ten_tour" id="ten_tour" value={formData.ten_tour} onChange={handleChange} required disabled={isLoading}
-                   className="w-full bg-gray-50 dark:bg-theme-surface border border-gray-300 dark:border-theme-border text-gray-900 dark:text-theme-text-primary rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-theme-primary" />
-          </div>
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="ten_tour"
+                className="block text-sm font-medium text-theme-text-secondary"
+              >
+                Tên tour <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="ten_tour"
+                name="ten_tour"
+                value={formData.ten_tour}
+                onChange={handleChange}
+                required
+                className="w-full p-2 border border-theme-border rounded-md bg-theme-background focus:outline-none focus:ring-2 focus:ring-theme-primary"
+                placeholder="Nhập tên tour"
+                disabled={isSubmitting}
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-theme-text-secondary mb-1" htmlFor="mo_ta_chi_tiet">
-              Mô tả chi tiết
-            </label>
-            <textarea name="mo_ta_chi_tiet" id="mo_ta_chi_tiet" value={formData.mo_ta_chi_tiet} onChange={handleChange} rows="4" disabled={isLoading}
-                      className="w-full bg-gray-50 dark:bg-theme-surface border border-gray-300 dark:border-theme-border text-gray-900 dark:text-theme-text-primary rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-theme-primary"></textarea>
-          </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="thoi_gian_du_kien"
+                className="block text-sm font-medium text-theme-text-secondary"
+              >
+                Thời gian dự kiến
+              </label>
+              <input
+                type="text"
+                id="thoi_gian_du_kien"
+                name="thoi_gian_du_kien"
+                value={formData.thoi_gian_du_kien}
+                onChange={handleChange}
+                className="w-full p-2 border border-theme-border rounded-md bg-theme-background focus:outline-none focus:ring-2 focus:ring-theme-primary"
+                placeholder="Ví dụ: 3 ngày 2 đêm"
+                disabled={isSubmitting}
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-theme-text-secondary mb-1" htmlFor="thoi_gian_du_kien">
-              Thời gian dự kiến (VD: 3 ngày 2 đêm)
-            </label>
-            <input type="text" name="thoi_gian_du_kien" id="thoi_gian_du_kien" value={formData.thoi_gian_du_kien} onChange={handleChange} disabled={isLoading}
-                   className="w-full bg-gray-50 dark:bg-theme-surface border border-gray-300 dark:border-theme-border text-gray-900 dark:text-theme-text-primary rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-theme-primary" />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-theme-text-secondary mb-1">
-              Ảnh bìa
-            </label>
-            <div className="mt-1 flex flex-col items-center">
-              <div className="w-full h-48 border-2 border-gray-300 dark:border-theme-border border-dashed rounded-md flex items-center justify-center mb-2 relative group">
-                {imagePreview ? (
-                  <img src={imagePreview} alt="Xem trước ảnh bìa" className="max-h-full max-w-full object-contain rounded-md" />
-                ) : (
-                  <div className="text-center p-4">
-                    <ImageIcon size={48} className="mx-auto text-gray-400 dark:text-gray-500" />
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Chưa có ảnh</p>
-                  </div>
-                )}
-                 {imagePreview && (
-                    <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Xóa ảnh hiện tại"
-                    >
-                        <X size={14} />
-                    </button>
+            <div className="space-y-2">
+              <label
+                htmlFor="mo_ta_chi_tiet"
+                className="block text-sm font-medium text-theme-text-secondary"
+              >
+                Mô tả chi tiết
+              </label>
+              <textarea
+                id="mo_ta_chi_tiet"
+                name="mo_ta_chi_tiet"
+                value={formData.mo_ta_chi_tiet}
+                onChange={handleChange}
+                rows={4}
+                className="w-full p-2 border border-theme-border rounded-md bg-theme-background focus:outline-none focus:ring-2 focus:ring-theme-primary"
+                placeholder="Mô tả chi tiết về tour"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="url_anh_bia"
+                className="block text-sm font-medium text-theme-text-secondary"
+              >
+                Ảnh bìa
+              </label>
+              <div className="flex items-center">
+                <input
+                  type="file"
+                  id="url_anh_bia"
+                  name="url_anh_bia"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  disabled={isSubmitting}
+                />
+                <label
+                  htmlFor="url_anh_bia"
+                  className="cursor-pointer bg-theme-background border border-theme-border px-4 py-2 rounded-md text-theme-text-secondary hover:bg-theme-hover"
+                >
+                  Chọn ảnh
+                </label>
+                {imagePreview && (
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="ml-2 text-red-500 hover:text-red-700"
+                  >
+                    Xóa ảnh
+                  </button>
                 )}
               </div>
-              <label htmlFor="url_anh_bia_file" 
-                     className="cursor-pointer bg-gray-100 hover:bg-gray-200 dark:bg-theme-surface dark:hover:bg-theme-background text-gray-700 dark:text-theme-text-secondary font-medium py-2 px-4 rounded-md text-sm inline-flex items-center">
-                <UploadCloud size={18} className="mr-2" />
-                {selectedImageFile ? 'Thay đổi ảnh' : 'Tải ảnh lên'}
-              </label>
-              <input type="file" name="url_anh_bia_file" id="url_anh_bia_file" onChange={handleImageChange} accept="image/*" className="hidden" />
-              {selectedImageFile && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{selectedImageFile.name}</p>}
+              {imagePreview && (
+                <div className="mt-2">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="max-h-32 rounded-md"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/150?text=Image+Error';
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Placeholder for Partner Selection - Implement Later */}
-          {/* <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-theme-text-secondary mb-1">Đối tác liên kết</label>
-            </div> */}
-
-
-          <div className="pt-6 flex justify-end space-x-3 border-t border-theme-border">
-            <button type="button" onClick={onClose} disabled={isLoading}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-theme-text-secondary bg-gray-100 dark:bg-theme-surface hover:bg-gray-200 dark:hover:bg-theme-background rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-offset-theme-surface0">
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-theme-border rounded-md text-theme-text-secondary hover:bg-theme-hover"
+              disabled={isSubmitting}
+            >
               Hủy
             </button>
-            <button type="submit" disabled={isLoading}
-                    className="px-4 py-2 text-sm font-medium text-white bg-theme-primary hover:bg-theme-primary-hover rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-theme-primary dark:focus:ring-offset-theme-surface0">
-              {isLoading ? (tour && tour.id_san_pham_tour ? 'Đang cập nhật...' : 'Đang tạo...') : (tour && tour.id_san_pham_tour ? 'Lưu thay đổi' : 'Tạo Tour')}
+            <button
+              type="submit"
+              className="px-4 py-2 bg-theme-primary text-white rounded-md hover:bg-theme-primary-dark"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Đang lưu...' : isEditing ? 'Lưu thay đổi' : 'Thêm tour'}
             </button>
           </div>
+
+          {/* Thêm nút Debug chỉ hiển thị trong môi trường phát triển */}
+          {process.env.NODE_ENV === 'development' && (
+            <button
+              type="button"
+              className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md text-xs mr-auto"
+              onClick={() => {
+                console.group('Form Debug Info');
+                console.log('Form Data:', formData);
+                console.log('Image File:', imageFile);
+                console.log('Is Editing:', isEditing);
+                console.log('Original Tour:', tour);
+                console.groupEnd();
+              }}
+            >
+              Debug
+            </button>
+          )}
+
+          {isEditing && (
+            <button
+              type="button"
+              className="px-3 py-1 bg-yellow-200 text-yellow-800 rounded-md text-xs mt-2"
+              onClick={async () => {
+                if (!imageFile) {
+                  alert("Vui lòng chọn một file ảnh trước");
+                  return;
+                }
+
+                try {
+                  setIsSubmitting(true);
+                  setError('');
+
+                  // Tạo một FormData mới chỉ chứa file ảnh
+                  const imageOnlyData = new FormData();
+                  imageOnlyData.append('url_anh_bia', imageFile);
+
+                  console.log("Sending image-only update");
+                  const response = await updateTour(tour.id_san_pham_tour, imageOnlyData);
+
+                  console.log("Image update response:", response);
+                  alert("Cập nhật ảnh thành công!");
+                  onClose();
+                } catch (err) {
+                  console.error("Error updating image:", err);
+                  setError(err.message || "Không thể cập nhật ảnh");
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+            >
+              Chỉ cập nhật ảnh
+            </button>
+          )}
         </form>
       </motion.div>
     </div>

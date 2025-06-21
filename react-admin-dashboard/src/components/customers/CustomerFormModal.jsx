@@ -105,26 +105,29 @@ const CustomerFormModal = ({ customer, onClose, onSubmit }) => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
       >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-theme-text-secondary hover:text-theme-text-primary"
-          disabled={isLoading}
-        >
-          <X size={20} />
-        </button>
-
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-theme-text-primary mb-6">
+        {/* Header màu xám */}
+        <div className="sticky top-0 z-10 bg-theme-surface border-b border-theme-border p-6">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-theme-text-primary">
             {customer && customer.id_khach_hang ? 'Chỉnh sửa Khách hàng' : 'Thêm Khách hàng mới'}
           </h2>
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            disabled={isLoading}
+          >
+            <X size={24} />
+          </button>
+        </div>
 
+        {/* Form content */}
+        <form onSubmit={handleSubmit} className="p-6">
           {error && (
             <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 dark:bg-opacity-30 text-red-700 dark:text-red-300 rounded-md text-sm">
               <p><strong>Lỗi:</strong> {error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-theme-text-secondary mb-1" htmlFor="ho_ten">
                 Họ và tên <span className="text-red-500">*</span>
@@ -239,32 +242,35 @@ const CustomerFormModal = ({ customer, onClose, onSubmit }) => {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-theme-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-theme-primary bg-white dark:bg-theme-surface text-theme-text-primary"
               />
             </div>
+          </div>
+        </form>
 
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isLoading}
-                className="px-4 py-2 border border-gray-300 dark:border-theme-border rounded-md shadow-sm bg-white dark:bg-theme-surface text-theme-text-primary hover:bg-gray-50 dark:hover:bg-theme-surface0 focus:outline-none focus:ring-2 focus:ring-theme-primary"
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm bg-theme-primary text-white hover:bg-theme-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-theme-primary dark:focus:ring-offset-theme-surface0 flex items-center"
-              >
-                {isLoading ? (
-                  <>
-                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></span>
-                    <span>Đang xử lý...</span>
-                  </>
-                ) : (
-                  <span>Lưu thông tin</span>
-                )}
-              </button>
-            </div>
-          </form>
+        {/* Footer màu xám */}
+        <div className="sticky bottom-0 z-10 bg-theme-surface border-t border-theme-border p-6">
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="px-4 py-2 border border-gray-300 dark:border-theme-border rounded-md shadow-sm bg-white dark:bg-theme-surface text-theme-text-primary hover:bg-gray-50 dark:hover:bg-theme-surface0 focus:outline-none focus:ring-2 focus:ring-theme-primary"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm bg-theme-primary text-white hover:bg-theme-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-theme-primary dark:focus:ring-offset-theme-surface0 flex items-center"
+            >
+              {isLoading ? (
+                <>
+                  <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></span>
+                  <span>Đang xử lý...</span>
+                </>
+              ) : (
+                <span>Lưu thông tin</span>
+              )}
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>

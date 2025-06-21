@@ -197,46 +197,85 @@ const PartnerService = {
     },
 
     // Thêm method getPartnersByLocationId
-getPartnersByLocationId: async (queryParams) => {
-    try {
-        const { id_dia_diem, limit, offset, sortBy, order } = queryParams;
+    getPartnersByLocationId: async (queryParams) => {
+        try {
+            const { id_dia_diem, limit, offset, sortBy, order } = queryParams;
 
-        // ===== BƯỚC 1: KIỂM TRA SỰ TỒN TẠI CỦA ĐỊA ĐIỂM =====
-        const location = await DiaDiemModel.findById(id_dia_diem);
-        if (!location) {
-            // Nếu không tìm thấy địa điểm,โยน lỗi 404
-            throw { statusCode: 404, message: `Địa điểm với ID ${id_dia_diem} không tồn tại.` };
-        }
-        // =======================================================
+            // ===== BƯỚC 1: KIỂM TRA SỰ TỒN TẠI CỦA ĐỊA ĐIỂM =====
+            const location = await DiaDiemModel.findById(id_dia_diem);
+            if (!location) {
+                // Nếu không tìm thấy địa điểm,โยน lỗi 404
+                throw { statusCode: 404, message: `Địa điểm với ID ${id_dia_diem} không tồn tại.` };
+            }
+            // =======================================================
 
-        // Nếu địa điểm tồn tại, tiếp tục xử lý như cũ
-        // Xây dựng truy vấn cơ sở
-        let sql = `
+            // Nếu địa điểm tồn tại, tiếp tục xử lý như cũ
+            // Xây dựng truy vấn cơ sở
+            let sql = `
             SELECT dt.*
             FROM doitac dt
             WHERE dt.id_dia_diem = ?
         `;
 
-        // Đếm tổng số dòng
-        const countSql = `SELECT COUNT(*) as total FROM doitac WHERE id_dia_diem = ?`;
-        const [countResult] = await pool.query(countSql, [id_dia_diem]);
-        const totalItems = countResult[0].total;
+            // Đếm tổng số dòng
+            const countSql = `SELECT COUNT(*) as total FROM doitac WHERE id_dia_diem = ?`;
+            const [countResult] = await pool.query(countSql, [id_dia_diem]);
+            const totalItems = countResult[0].total;
 
-        // Thêm sắp xếp và phân trang
-        sql += ` ORDER BY ${sortBy} ${order} LIMIT ? OFFSET ?`;
+            // Thêm sắp xếp và phân trang
+            sql += ` ORDER BY ${sortBy} ${order} LIMIT ? OFFSET ?`;
 
-        // Thực hiện truy vấn
-        const [partners] = await pool.query(sql, [id_dia_diem, limit, offset]);
+            // Thực hiện truy vấn
+            const [partners] = await pool.query(sql, [id_dia_diem, limit, offset]);
 
-        return {
-            partners,
-            totalItems
-        };
-    } catch (error) {
-        console.error("Error in PartnerService.getPartnersByLocationId:", error);
-        throw error;
+            return {
+                partners,
+                totalItems
+            };
+        } catch (error) {
+            console.error("Error in PartnerService.getPartnersByLocationId:", error);
+            throw error;
+        }
+    },
+
+    // Đảm bảo options được kiểm tra đúng cách
+    getAllPartners: async (options = {}) => {
+        // Đảm bảo options có giá trị mặc định nếu là undefined
+        const {
+            limit = 10,
+            offset = 0,
+            searchTerm = '',
+            sortBy = 'id_doi_tac',
+            order = 'DESC'
+        } = options || {};
+
+        console.log("Service options:", { limit, offset, searchTerm, sortBy, order });
+
+        try {
+            // Sử dụng trực tiếp phương thức findAll từ model
+            const result = await PartnerModel.findAll({
+                limit,
+                offset,
+                searchTerm,
+                sortBy,
+                order
+            });
+
+            // Định dạng kết quả trả về
+            return {
+                partners: result.partners || [],
+                pagination: {
+                    totalItems: result.totalItems || 0,
+                    totalPages: Math.ceil(result.totalItems / limit) || 0,
+                    currentPage: Math.floor(offset / limit) + 1,
+                    limit
+                }
+            };
+        } catch (error) {
+            console.error("Error in getAllPartners service:", error);
+            throw error;
+        }
     }
-}
 };
 
 module.exports = PartnerService;

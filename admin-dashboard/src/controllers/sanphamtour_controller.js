@@ -1,6 +1,6 @@
 // File: src/controllers/tour_controller.js
 const tourService = require('../services/sanphamtour_service');
-const { successResponse, errorResponse, paginatedResponse } = require('../utils/api_response');
+const { successResponse, errorResponse, paginatedResponse, paginatedResponseObj } = require('../utils/api_response');
 const { body, param, query } = require('express-validator');
 // const handleValidationErrors = require('../middlewares/validation_middleware'); // Đã được dùng ở routes
 
@@ -128,7 +128,7 @@ const TourController = {
             const tours = result.tours || [];
             const totalCount = result.totalCount || 0;
 
-            return paginatedResponse({
+            return paginatedResponseObj({
                 res,
                 message: 'Lấy danh sách sản phẩm tour thành công.',
                 data: tours,

@@ -15,6 +15,7 @@ const CustomersTable = () => {
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('kh.ngay_tao');
   const [order, setOrder] = useState('DESC');
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,6 +27,18 @@ const CustomersTable = () => {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [viewingCustomer, setViewingCustomer] = useState(null);
 
+  // Debounce search term to avoid unnecessary API calls
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      if (debouncedSearchTerm !== searchTerm) {
+        setDebouncedSearchTerm(searchTerm);
+        setCurrentPage(1); // Reset to first page on new search
+      }
+    }, 500);
+
+    return () => clearTimeout(timerId);
+  }, [searchTerm]);
+
   // Fetch customers with parameters
   const fetchCustomers = useCallback(async () => {
     setIsLoading(true);
@@ -34,7 +47,7 @@ const CustomersTable = () => {
       const params = {
         page: currentPage,
         limit: ITEMS_PER_PAGE,
-        searchTerm,
+        searchTerm: debouncedSearchTerm,
         sortBy,
         order
       };
@@ -59,15 +72,22 @@ const CustomersTable = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, searchTerm, sortBy, order]);
+  }, [currentPage, debouncedSearchTerm, sortBy, order]);
 
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
 
   const handleSearchChange = (e) => {
+    // Chỉ cập nhật searchTerm, không reset trang ngay lập tức để tránh mất focus
     setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page on new search
+  };
+
+  const handleSearch = (e) => {
+    if (e) e.preventDefault();
+    // Kích hoạt tìm kiếm ngay lập tức
+    setDebouncedSearchTerm(searchTerm);
+    setCurrentPage(1);
   };
 
   const handleSort = (field) => {
@@ -77,7 +97,8 @@ const CustomersTable = () => {
     setCurrentPage(1); // Reset to first page on new sort
   };
 
-  const handleDelete = async (customerId) => {
+  const handleDelete = async (customerId, e) => {
+    if (e) e.stopPropagation(); // Prevent opening details modal
     if (window.confirm("Bạn có chắc chắn muốn xóa khách hàng này? Thao tác này có thể không thành công nếu khách hàng có đơn đặt tour liên quan.")) {
       try {
         setIsLoading(true);
@@ -106,7 +127,8 @@ const CustomersTable = () => {
     setIsFormModalOpen(true);
   };
 
-  const handleOpenEditModal = (customer) => {
+  const handleOpenEditModal = (customer, e) => {
+    if (e) e.stopPropagation(); // Prevent opening details modal
     setEditingCustomer(customer);
     setIsFormModalOpen(true);
   };
@@ -173,22 +195,29 @@ const CustomersTable = () => {
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <h2 className="text-xl font-semibold text-theme-text-primary">Danh sách Khách hàng</h2>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-grow sm:flex-grow-0 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
             <input
               type="text"
               placeholder="Tìm kiếm khách hàng..."
-              className="pl-10 pr-4 py-2 border border-theme-border rounded-lg bg-theme-surface focus:outline-none focus:ring-2 focus:ring-theme-primary w-full"
+              className="bg-theme-background border border-theme-border px-4 py-2 pr-10 w-full rounded-md focus:outline-none focus:ring-2 focus:ring-theme-primary"
               value={searchTerm}
               onChange={handleSearchChange}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch(e)}
               disabled={isLoading}
             />
-            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-theme-text-secondary" />
+            <button
+              onClick={handleSearch}
+              disabled={isLoading}
+              className="absolute top-2.5 right-3 text-theme-text-secondary"
+            >
+              <Search size={18} />
+            </button>
           </div>
 
           <button
             onClick={handleOpenCreateModal}
-            className="flex items-center gap-1 bg-theme-primary hover:bg-theme-primary/90 text-white py-2 px-4 rounded-lg whitespace-nowrap"
+            className="flex items-center gap-1 bg-theme-primary hover:bg-theme-primary/90 text-white py-2 px-4 rounded-lg whitespace-nowrap justify-center"
             disabled={isLoading}
           >
             <span className="hidden sm:inline">Thêm khách hàng</span>
@@ -210,7 +239,7 @@ const CustomersTable = () => {
         </div>
       ) : customers.length === 0 ? (
         <div className="text-center py-10 text-theme-text-secondary">
-          {searchTerm ? "Không tìm thấy khách hàng nào phù hợp với tìm kiếm của bạn." : "Chưa có khách hàng nào."}
+          {debouncedSearchTerm ? "Không tìm thấy khách hàng nào phù hợp với tìm kiếm của bạn." : "Chưa có khách hàng nào."}
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -276,14 +305,14 @@ const CustomersTable = () => {
                     <div className="flex items-center justify-center space-x-3">
                       <button
                         className="text-blue-500 hover:text-blue-700 p-1"
-                        onClick={(e) => { e.stopPropagation(); handleOpenEditModal(customer); }}
+                        onClick={(e) => { e.stopPropagation(); handleOpenEditModal(customer, e); }}
                         title="Sửa"
                       >
                         <Edit size={18} />
                       </button>
                       <button
                         className="text-red-500 hover:text-red-400 p-1"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(customer.id_khach_hang); }}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(customer.id_khach_hang, e); }}
                         title="Xóa"
                       >
                         <Trash2 size={18} />
@@ -303,43 +332,45 @@ const CustomersTable = () => {
           <div className="mb-2 sm:mb-0">
             Hiển thị {customers.length} trên tổng số {totalItems} khách hàng. (Trang {currentPage}/{totalPages})
           </div>
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1 || isLoading}
-              className="p-2 rounded hover:bg-theme-background disabled:opacity-50"
-              title="Trang đầu"
-            >
-              <ChevronsLeft size={20} />
-            </button>
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1 || isLoading}
-              className="p-2 rounded hover:bg-theme-background disabled:opacity-50"
-              title="Trang trước"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <span className="px-3 py-1.5 border border-theme-border rounded">
-              {currentPage}
-            </span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages || isLoading}
-              className="p-2 rounded hover:bg-theme-background disabled:opacity-50"
-              title="Trang sau"
-            >
-              <ChevronRight size={20} />
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages || isLoading}
-              className="p-2 rounded hover:bg-theme-background disabled:opacity-50"
-              title="Trang cuối"
-            >
-              <ChevronsRight size={20} />
-            </button>
-          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1 || isLoading}
+                className="p-2 rounded hover:bg-theme-background disabled:opacity-50"
+                title="Trang đầu"
+              >
+                <ChevronsLeft size={20} />
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1 || isLoading}
+                className="p-2 rounded hover:bg-theme-background disabled:opacity-50"
+                title="Trang trước"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <span className="px-3 py-1.5 border border-theme-border rounded">
+                {currentPage}
+              </span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages || isLoading}
+                className="p-2 rounded hover:bg-theme-background disabled:opacity-50"
+                title="Trang sau"
+              >
+                <ChevronRight size={20} />
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages || isLoading}
+                className="p-2 rounded hover:bg-theme-background disabled:opacity-50"
+                title="Trang cuối"
+              >
+                <ChevronsRight size={20} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
