@@ -20,6 +20,10 @@ router.use(authMiddleware.authorizeRole(['admin'])); // hoặc các role phù h�
 // GET /lichtrinhtour - Lấy danh sách lịch trình
 router.get('/', TourScheduleController.getAllTourSchedules);
 
+// THÊM ROUTE STATISTICS (phải đặt trước các routes có param)
+// GET /lichtrinhtour/statistics - Lấy thống kê về lịch trình tour
+router.get('/statistics', TourScheduleController.getTourScheduleStatistics);
+
 // POST /lichtrinhtour - Tạo mới lịch trình tour
 router.post(
     '/',
@@ -67,12 +71,6 @@ const tourActivityRoutes = require('./hoatdongtour_standalone_routes');
 
 router.use('/:id_lich_trinh_tour/provided-services', tourProvidedServiceRoutes);
 router.use('/:id_lich_trinh_tour/activities', tourActivityRoutes);
-
-// Import thêm các controllers cần thiết
-// const bookingController = require('../controllers/dattour_controller');
-// const dichvuTourController = require('../controllers/dichvutour_controller');
-// const hoatDongTourController = require('../controllers/hoatdongtour_controller').TourActivityController;
-// const { activityValidationRules } = require('../controllers/hoatdongtour_controller');
 
 // Thêm route GET để lấy đơn đặt tour của lịch trình
 router.get(

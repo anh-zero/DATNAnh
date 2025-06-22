@@ -62,10 +62,13 @@ const getAllBookingsQueryValidationRules = () => [
             }
             return true;
         }),
-    // Đảm bảo sortBy có trang_thai_thanh_toan
+    // Cập nhật danh sách các cột được phép sắp xếp
     query('sortBy').optional().isIn([
-        'dt.ngay_dat', 'dt.ngay_tao', 'kh.ho_ten', 't.ten_tour',
-        'dt.tong_tien_thanh_toan', 'dt.trang_thai_dat_tour', 'dt.trang_thai_thanh_toan'
+        'dt.id_dat_tour', 'dt.ngay_dat', 'dt.ngay_tao', 'dt.trang_thai_dat_tour', 'dt.trang_thai_thanh_toan',
+        'kh.ho_ten', 'spt.ten_tour', 'dt.so_luong_khach', 'dt.tong_tien_thanh_toan',
+        // Thêm các phiên bản không có tiền tố để tương thích với frontend
+        'id_dat_tour', 'ngay_dat', 'ngay_tao', 'trang_thai_dat_tour', 'trang_thai_thanh_toan',
+        'ho_ten', 'ten_tour', 'so_luong_khach', 'tong_tien_thanh_toan'
     ]),
     query('order').optional().isIn(['ASC', 'DESC'])
 ];
@@ -206,21 +209,28 @@ const BookingController = {
             const { id_lich_trinh_tour } = req.params;
             const { page = 1, limit = 10 } = req.query;
 
+            // Thêm JOIN với bảng khachhang và lấy thêm email
             const result = await bookingService.getBookingsByScheduleId(
                 id_lich_trinh_tour,
                 parseInt(page),
                 parseInt(limit)
             );
 
-            return paginatedResponse({ // Mở ngoặc nhặt { ở đây
+            // Đảm bảo trả về email trong mỗi booking object
+            const bookingsWithEmail = result.bookings.map(booking => ({
+                ...booking,
+                email: booking.khachhang?.email_lien_he || null
+            }));
+
+            return paginatedResponseObj({
                 res: res,
                 message: `Lấy danh sách đặt tour cho lịch trình ${id_lich_trinh_tour} thành công`,
-                data: result.bookings,
+                data: bookingsWithEmail,
                 // Truyền các thuộc tính phân trang trực tiếp
                 currentPage: parseInt(page),
                 totalCount: result.totalItems,
                 limit: parseInt(limit)
-            }); // Đóng ngoặc nhặt } ở đây
+            });
         } catch (error) {
             next(error);
         }

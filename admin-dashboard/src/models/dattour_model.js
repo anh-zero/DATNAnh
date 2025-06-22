@@ -75,14 +75,14 @@ const BookingModel = {
             FROM dattour dt 
             LEFT JOIN khachhang kh ON dt.id_khach_hang = kh.id_khach_hang
             LEFT JOIN lichtrinhtour ltt ON dt.id_lich_trinh_tour = ltt.id_lich_trinh_tour
-            LEFT JOIN tour t ON ltt.id_tour = t.id_tour
+            LEFT JOIN sanphamtour spt ON ltt.id_san_pham_tour = spt.id_san_pham_tour
             WHERE 1=1
         `;
 
         const params = [];
 
         if (searchTerm) {
-            baseSql += ` AND (kh.ho_ten LIKE ? OR kh.email_lien_he LIKE ? OR t.ten_tour LIKE ?)`;
+            baseSql += ` AND (kh.ho_ten LIKE ? OR kh.email_lien_he LIKE ? OR spt.ten_tour LIKE ?)`;
             params.push(`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`);
         }
 
@@ -112,7 +112,10 @@ const BookingModel = {
         // Validate sortBy để tránh SQL injection
         const allowedSortColumns = [
             'dt.ngay_tao', 'dt.ngay_dat', 'dt.trang_thai_dat_tour', 'dt.trang_thai_thanh_toan',
-            'kh.ho_ten', 't.ten_tour', 'dt.so_luong_khach', 'dt.tong_tien_thanh_toan'
+            'kh.ho_ten', 'spt.ten_tour', 'dt.so_luong_khach', 'dt.tong_tien_thanh_toan',
+            // Thêm các phiên bản không có tiền tố để tương thích với frontend
+            'ngay_tao', 'ngay_dat', 'trang_thai_dat_tour', 'trang_thai_thanh_toan',
+            'ho_ten', 'ten_tour', 'so_luong_khach', 'tong_tien_thanh_toan'
         ];
 
         if (!allowedSortColumns.includes(sortBy)) {
@@ -129,7 +132,7 @@ const BookingModel = {
                 dt.trang_thai_thanh_toan, dt.tong_tien_thanh_toan, dt.ghi_chu_dat_tour,
                 dt.ngay_tao, dt.ngay_cap_nhat,
                 kh.ho_ten as ten_khach_hang, kh.email_lien_he, kh.so_dien_thoai,
-                t.ten_tour, ltt.ngay_khoi_hanh, ltt.ngay_ket_thuc
+                spt.ten_tour, ltt.ngay_khoi_hanh, ltt.ngay_ket_thuc
             ${baseSql}
             ORDER BY ${sortBy} ${sortOrder}
             LIMIT ? OFFSET ?
@@ -261,6 +264,29 @@ const BookingModel = {
             };
         } catch (error) {
             console.error("Error in BookingModel.getStatistics:", error);
+            throw error;
+        }
+    },
+
+    updateBookingStatusByScheduleId: async (scheduleId, newStatus) => {
+        try {
+            // In ra giá trị để debug
+            console.log(`[DEBUG] Cập nhật trạng thái: '${newStatus}'`);
+
+            // Kiểm tra xem giá trị có đúng không
+            const validStatuses = ['Mới', 'Đã xác nhận', 'Chờ thanh toán', 'Đã hủy', 'Hoàn thành'];
+            if (!validStatuses.includes(newStatus)) {
+                throw new Error(`Trạng thái không hợp lệ: ${newStatus}. Các giá trị hợp lệ: ${validStatuses.join(', ')}`);
+            }
+
+            // Sử dụng pool thay vì db
+            const result = await pool.execute(
+                'UPDATE dattour SET trang_thai_dat_tour = ? WHERE id_lich_trinh_tour = ?',
+                [newStatus, scheduleId]
+            );
+            return result;
+        } catch (error) {
+            console.error('Error updating booking status:', error);
             throw error;
         }
     },

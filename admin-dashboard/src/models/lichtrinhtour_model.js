@@ -62,10 +62,42 @@ const TourScheduleModel = {
     },
 
     findById: async (id_lich_trinh_tour, connection = null) => {
-        const sql = `SELECT * FROM lichtrinhtour WHERE id_lich_trinh_tour = ?`;
+        // Thay đổi query để JOIN bảng sanphamtour
+        const sql = `
+            SELECT lt.*, 
+                   spt.id_san_pham_tour, 
+                   spt.ten_tour, 
+                   spt.thoi_gian_du_kien,
+                   spt.url_anh_bia,
+                   spt.mo_ta_chi_tiet
+            FROM lichtrinhtour lt
+            LEFT JOIN sanphamtour spt ON lt.id_san_pham_tour = spt.id_san_pham_tour
+            WHERE lt.id_lich_trinh_tour = ?`;
+
         try {
             const [rows] = await TourScheduleModel._query(sql, [id_lich_trinh_tour], connection);
-            return rows[0];
+            if (rows.length === 0) return null;
+
+            // Restructure để có đúng format
+            const schedule = { ...rows[0] };
+            const sanphamtour = {
+                id_san_pham_tour: rows[0].id_san_pham_tour,
+                ten_tour: rows[0].ten_tour,
+                thoi_gian_du_kien: rows[0].thoi_gian_du_kien,
+                url_anh_bia: rows[0].url_anh_bia,
+                mo_ta_chi_tiet: rows[0].mo_ta_chi_tiet
+            };
+
+            // Xóa các field trùng
+            delete schedule.ten_tour;
+            delete schedule.thoi_gian_du_kien;
+            delete schedule.url_anh_bia;
+            delete schedule.mo_ta_chi_tiet;
+
+            // Gán sanphamtour vào schedule
+            schedule.sanphamtour = sanphamtour;
+
+            return schedule;
         } catch (error) {
             console.error("Error in TourScheduleModel.findById:", error);
             throw error;
@@ -216,7 +248,7 @@ const TourScheduleModel = {
                 ltt.*,
                 spt.ten_tour
             FROM lichtrinhtour ltt
-            JOIN sanphamtour spt ON ltt.id_san_pham_tour = spt.id_san_pham_tour
+            LEFT JOIN sanphamtour spt ON ltt.id_san_pham_tour = spt.id_san_pham_tour
             ${whereClause}
             ORDER BY ltt.${validSortBy} ${validOrder}
             LIMIT ? OFFSET ?`;

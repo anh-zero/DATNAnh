@@ -77,14 +77,16 @@ const ToursTable = () => {
         fetchTours();
     }, [fetchTours]);
 
-    // Tối ưu hàm handleSearchChange
+    // Cải thiện hàm handleSearchChange tương tự như trong PartnersTable
     const handleSearchChange = (e) => {
         const value = e.target.value;
         setSearchTerm(value);
 
+        // Đảm bảo không gọi API quá nhiều
         if (timeoutId) clearTimeout(timeoutId);
 
         const newTimeoutId = setTimeout(() => {
+            // Đặt lại trang về 1 khi tìm kiếm
             setCurrentPage(1);
             setIsLoading(true);
 
@@ -97,6 +99,7 @@ const ToursTable = () => {
             };
 
             getAllTours(params).then(response => {
+                // Cập nhật nhiều state trong một lần để giảm re-render
                 setTours(response.data?.tours || []);
                 if (response.pagination) {
                     setTotalPages(response.pagination.totalPages || 1);
@@ -109,15 +112,29 @@ const ToursTable = () => {
                 console.error("Tour loading error:", err);
                 setIsLoading(false);
             });
-        }, 300);
+        }, 300); // Đợi 300ms để tránh gọi API quá nhiều
 
         setTimeoutId(newTimeoutId);
+    };
+
+    // Thêm hàm xử lý phím Enter để tìm kiếm ngay lập tức
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                setTimeoutId(null);
+            }
+
+            setCurrentPage(1);
+            fetchTours();
+        }
     };
 
     const handleSort = (field) => {
         const newOrder = sortBy === field && order === 'ASC' ? 'DESC' : 'ASC';
         setSortBy(field);
         setOrder(newOrder);
+        setCurrentPage(1); // Quay lại trang đầu khi sắp xếp
     };
 
     const handleDelete = async (tourId, e) => {
@@ -126,7 +143,13 @@ const ToursTable = () => {
             try {
                 await deleteTour(tourId);
                 alert('Xóa tour thành công');
-                fetchTours();
+
+                // Nếu xóa tour cuối cùng trên trang hiện tại, quay lại trang trước
+                if (tours.length === 1 && currentPage > 1) {
+                    setCurrentPage(currentPage - 1);
+                } else {
+                    fetchTours();
+                }
             } catch (err) {
                 alert(`Lỗi khi xóa tour: ${err.message}`);
             }
@@ -147,7 +170,7 @@ const ToursTable = () => {
     const onCloseFormModal = () => {
         setIsFormModalOpen(false);
         setEditingTour(null);
-        fetchTours();
+        fetchTours(); // Cập nhật dữ liệu sau khi đóng modal
     };
 
     const handleOpenDetailsModal = async (tourId) => {
@@ -168,6 +191,7 @@ const ToursTable = () => {
     const onCloseDetailsModal = () => {
         setIsDetailsModalOpen(false);
         setViewingTour(null);
+        fetchTours(); // Làm mới dữ liệu sau khi đóng modal
     };
 
     const renderSortIcon = (field) => {
@@ -196,13 +220,18 @@ const ToursTable = () => {
                             className="bg-theme-background border border-theme-border px-4 py-2 pr-10 w-full rounded-md focus:outline-none focus:ring-2 focus:ring-theme-primary"
                             value={searchTerm}
                             onChange={handleSearchChange}
+                            onKeyDown={handleKeyDown}
                             disabled={isLoading}
                             key="tour-search"
+                            ref={(input) => input && document.activeElement === document.body && input.focus()} // Thêm dòng này
                         />
-                        <Search
+                        <button
                             className="absolute top-2.5 right-3 text-theme-text-secondary"
-                            size={18}
-                        />
+                            onClick={() => fetchTours()} // Thêm hành động tìm kiếm khi nhấn vào icon
+                            disabled={isLoading}
+                        >
+                            <Search size={18} />
+                        </button>
                     </div>
                     <button
                         className="flex items-center gap-1 bg-theme-primary hover:bg-theme-primary/90 text-white py-2 px-4 rounded-lg whitespace-nowrap justify-center"

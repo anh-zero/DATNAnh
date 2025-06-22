@@ -68,9 +68,14 @@ export const getTourById = async (tourId) => {
 // tourData should be FormData if it includes an image file
 export const createTour = async (tourData) => {
     try {
-        const response = await api.post(BASE_URL, tourData, {
-            headers: getAuthHeaders(true), // True for FormData
-        });
+        // Đối với FormData, chúng ta cần ghi đè Content-Type
+        const config = {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        };
+        const response = await api.post(BASE_URL, tourData, config);
+
         if (response.data && response.data.success) {
             return response.data;
         }
@@ -83,47 +88,21 @@ export const createTour = async (tourData) => {
 
 export const updateTour = async (tourId, tourData) => {
     try {
-        const isFormData = tourData instanceof FormData;
-
-        // Hỗ trợ debug và hotfix
-        if (isFormData) {
-            // Kiểm tra xem FormData có chứa cả URL và File với cùng key không
-            const urlAnhBiaValues = [];
-            for (const [key, value] of tourData.entries()) {
-                if (key === 'url_anh_bia') {
-                    urlAnhBiaValues.push(value);
-                }
+        // Tạo một đối tượng config cho request này để ghi đè header mặc định
+        const config = {
+            headers: {
+                // Interceptor trong axios.js sẽ tự động thêm token
             }
+        };
 
-            if (urlAnhBiaValues.length > 1) {
-                console.warn("Warning: Multiple values for 'url_anh_bia' detected in FormData");
-
-                // Giải pháp: Xóa trường url_anh_bia hiện có và chỉ giữ lại file
-                const newFormData = new FormData();
-                let fileFound = false;
-
-                // Copy tất cả trường khác vào FormData mới
-                for (const [key, value] of tourData.entries()) {
-                    if (key !== 'url_anh_bia') {
-                        newFormData.append(key, value);
-                    } else if (value instanceof File && !fileFound) {
-                        // Chỉ thêm file đầu tiên tìm thấy
-                        newFormData.append(key, value);
-                        fileFound = true;
-                    }
-                }
-
-                // Thay thế FormData cũ bằng FormData mới
-                tourData = newFormData;
-                console.log("Fixed FormData fields:", [...tourData.keys()]);
-            }
+        // Kiểm tra xem dữ liệu có phải là FormData không
+        if (tourData instanceof FormData) {
+            // Nếu là FormData, set Content-Type để ghi đè mặc định 'application/json'
+            config.headers['Content-Type'] = 'multipart/form-data';
         }
+        // Nếu không phải FormData, nó sẽ dùng mặc định là 'application/json' từ instance
 
-        // Đảm bảo không thêm Content-Type khi gửi FormData
-        const headers = getAuthHeaders(isFormData);
-
-        // Gửi request
-        const response = await api.put(`${BASE_URL}/${tourId}`, tourData, { headers });
+        const response = await api.put(`${BASE_URL}/${tourId}`, tourData, config);
 
         console.log("updateTour: Server response:", response.data);
 
@@ -134,24 +113,20 @@ export const updateTour = async (tourId, tourData) => {
         }
         throw new Error(response.data?.message || `Không thể cập nhật tour ID ${tourId}.`);
     } catch (error) {
+        // ... (phần xử lý lỗi giữ nguyên)
         console.error("updateTour error:", error);
         if (error.response) {
             console.error("Response error:", {
                 status: error.response.status,
                 data: error.response.data,
-                headers: error.response.headers
             });
-            throw error.response.data || error;
         }
-        throw error;
+        throw error.response?.data || error;
     }
 };
-
 export const deleteTour = async (tourId) => {
     try {
-        const response = await api.delete(`${BASE_URL}/${tourId}`, {
-            headers: getAuthHeaders(),
-        });
+        const response = await api.delete(`${BASE_URL}/${tourId}`);
         if (response.data && response.data.success) {
             return response.data;
         }
@@ -162,15 +137,20 @@ export const deleteTour = async (tourId) => {
     }
 };
 
+// Đảm bảo hàm getTourStatistics được triển khai đúng
+
 export const getTourStatistics = async () => {
     try {
         const response = await api.get(`${BASE_URL}/statistics`, {
-            headers: getAuthHeaders(),
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
         });
+
         if (response.data && response.data.success) {
             return response.data;
         }
-        throw new Error(response.data?.message || 'Không thể lấy thông tin thống kê tour.');
+        throw new Error(response.data?.message || 'Không thể lấy thống kê tour.');
     } catch (error) {
         console.error('Error fetching tour statistics:', error.response?.data || error.message);
         throw error.response?.data || error;

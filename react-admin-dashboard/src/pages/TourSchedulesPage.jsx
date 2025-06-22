@@ -1,129 +1,107 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom';
-import { PlusCircle, ArrowLeft, Search } from 'lucide-react'; // Thêm Search
-import TourSchedulesTable from '../components/tourSchedules/TourSchedulesTable';
-import TourScheduleFormModal from '../components/tourSchedules/TourScheduleFormModal';
-import TourScheduleDetailsModal from '../components/tourSchedules/TourScheduleDetailsModal'; // NEW IMPORT
+import React, { useEffect, useState } from 'react';
+import { Calendar, Tag, Users, Clock } from "lucide-react";
+import { motion } from "framer-motion";
+import { getTourScheduleStatistics } from "../api/services/tourScheduleService";
+
 import Header from '../components/common/Header';
-import { getTourById } from '../api/services/tourService'; // Để lấy tên tour
+import StatCard from '../components/common/StatCard';
+import TourSchedulesTable from '../components/tourSchedules/TourSchedulesTable';
 
 const TourSchedulesPage = () => {
-    const { tourId } = useParams();
-    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [editingSchedule, setEditingSchedule] = useState(null);
+    const [schedulesStats, setSchedulesStats] = useState({
+        totalSchedules: 0,
+        activeSchedules: 0,
+        completedSchedules: 0,
+        upcomingSchedules: 0
+    });
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-    const [viewingSchedule, setViewingSchedule] = useState(null);
-    const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+    const fetchSchedulesStats = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
 
-    const [tourName, setTourName] = useState('');
-    const [refreshKey, setRefreshKey] = useState(0);
-    const [searchTerm, setSearchTerm] = useState(''); // NEW STATE for search
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error("Token không tồn tại");
+            }
+
+            // Gọi API thống kê
+            const statsResponse = await getTourScheduleStatistics();
+            if (statsResponse && statsResponse.success) {
+                const stats = statsResponse.data || {};
+                setSchedulesStats({
+                    totalSchedules: stats.totalSchedules || 0,
+                    activeSchedules: stats.activeSchedules || 0,
+                    completedSchedules: stats.completedSchedules || 0,
+                    upcomingSchedules: stats.upcomingSchedules || 0
+                });
+            } else {
+                throw new Error("Không thể lấy thống kê lịch trình tour");
+            }
+        } catch (error) {
+            console.error("Error fetching schedules stats:", error);
+            setError("Không thể tải thông tin thống kê lịch trình");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchTourName = async () => {
-            if (tourId) {
-                try {
-                    const tourData = await getTourById(tourId);
-                    setTourName(tourData.ten_tour || `ID ${tourId}`);
-                } catch (error) {
-                    console.error("Failed to fetch tour details:", error);
-                    setTourName(`ID ${tourId}`);
-                }
-            }
-        };
-        fetchTourName();
-    }, [tourId]);
+        // Trì hoãn để đảm bảo auth đã được xử lý
+        const timer = setTimeout(() => {
+            fetchSchedulesStats();
+        }, 300);
 
-    const handleSearchChange = (event) => { // NEW FUNCTION for search
-        setSearchTerm(event.target.value);
-        // Nếu tìm kiếm phía server, bạn có thể muốn reset page hoặc gọi fetch lại ở đây
-        // setRefreshKey(prevKey => prevKey + 1); // Hoặc để table tự xử lý
-    };
-
-    const handleOpenFormModal = (schedule = null) => {
-        setEditingSchedule(schedule);
-        setIsFormModalOpen(true);
-        setIsDetailsModalOpen(false); // Đảm bảo modal chi tiết đóng khi mở form
-    };
-
-    const handleCloseFormModal = () => {
-        setIsFormModalOpen(false);
-        setEditingSchedule(null);
-    };
-
-    const handleOpenDetailsModal = async (scheduleData) => { // Nhận scheduleData trực tiếp từ table
-        setViewingSchedule(scheduleData); // API call không cần thiết nếu table đã có đủ data
-        setIsDetailsModalOpen(true);
-        // Nếu cần fetch thêm chi tiết:
-        // setIsLoadingDetails(true);
-        // try {
-        //     const detailedSchedule = await getTourScheduleById(tourId, scheduleId);
-        //     setViewingSchedule(detailedSchedule);
-        //     setIsDetailsModalOpen(true);
-        // } catch (error) {
-        //     console.error("Failed to fetch schedule details:", error);
-        //     alert("Không thể tải chi tiết lịch trình.");
-        // } finally {
-        //     setIsLoadingDetails(false);
-        // }
-    };
-
-    const handleCloseDetailsModal = () => {
-        setIsDetailsModalOpen(false);
-        setViewingSchedule(null);
-    };
-
-    const handleSuccess = () => {
-        handleCloseFormModal();
-        handleCloseDetailsModal(); // Đóng cả modal chi tiết nếu đang mở
-        setRefreshKey(prevKey => prevKey + 1);
-    };
+        return () => clearTimeout(timer);
+    }, []);
 
     return (
         <div className='flex-1 overflow-auto relative z-10'>
-            <Header title={`Lịch trình cho Tour: ${tourName}`} />
+            <Header title='Quản lý Lịch Trình Tour' />
+
             <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
-                <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <RouterLink
-                        to="/tours"
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                    >
-                        <ArrowLeft size={18} className="mr-2" />
-                        Quay lại Tours
-                    </RouterLink>
-                    {/* Search bar and Add button will be inside TourSchedulesTable or a new header component for the table */}
-                </div>
-
-                <TourSchedulesTable
-                    tourId={tourId}
-                    onEdit={handleOpenFormModal}
-                    onViewDetails={handleOpenDetailsModal}
-                    refreshKey={refreshKey}
-                    searchTerm={searchTerm} // Pass searchTerm
-                    onSearchChange={handleSearchChange} // Pass search handler
-                    onAddSchedule={() => handleOpenFormModal()} // Pass handler to open form modal
-                />
-
-                {isFormModalOpen && (
-                    <TourScheduleFormModal
-                        isOpen={isFormModalOpen}
-                        onClose={handleCloseFormModal}
-                        schedule={editingSchedule}
-                        tourId={tourId}
-                        onSuccess={handleSuccess}
-                    />
+                {error && (
+                    <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-md mb-6">
+                        {error}
+                    </div>
                 )}
 
-                {isDetailsModalOpen && viewingSchedule && ( // NEW MODAL INSTANCE
-                    <TourScheduleDetailsModal
-                        isOpen={isDetailsModalOpen}
-                        onClose={handleCloseDetailsModal}
-                        schedule={viewingSchedule}
-                        isLoading={isLoadingDetails}
-                        onEdit={handleOpenFormModal} // Để mở form sửa từ modal chi tiết
+                {/* STATS */}
+                <motion.div
+                    className='grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8'
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <StatCard
+                        name='Tổng số lịch trình'
+                        icon={Calendar}
+                        value={schedulesStats.totalSchedules.toLocaleString()}
+                        color='#4299E1' // Xanh dương
                     />
-                )}
+                    <StatCard
+                        name='Đang mở bán'
+                        icon={Tag}
+                        value={schedulesStats.activeSchedules.toLocaleString()}
+                        color='#50E3C2' // Xanh ngọc
+                    />
+                    <StatCard
+                        name='Đã hoàn thành'
+                        icon={Clock}
+                        value={schedulesStats.completedSchedules.toLocaleString()}
+                        color='#F59E0B' // Cam nhạt
+                    />
+                    <StatCard
+                        name='Sắp khởi hành'
+                        icon={Users}
+                        value={schedulesStats.upcomingSchedules.toLocaleString()}
+                        color='#8B5CF6' // Tím
+                    />
+                </motion.div>
+
+                <TourSchedulesTable />
             </main>
         </div>
     );

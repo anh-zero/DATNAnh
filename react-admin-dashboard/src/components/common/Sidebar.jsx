@@ -28,7 +28,7 @@ const SIDEBAR_ITEMS = [
 		name: "Quản lý Đặt tour",
 		icon: ShoppingBag,
 		colorClass: "text-theme-primary",
-		href: "/orders",
+		href: "/bookings", // Thay đổi từ "/" thành "/bookings"
 		group: "business"
 	},
 	{

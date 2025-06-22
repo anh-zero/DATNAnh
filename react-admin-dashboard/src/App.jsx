@@ -5,6 +5,7 @@ import Sidebar from "./components/common/Sidebar";
 import UsersPage from "./pages/UsersPage";
 import CustomersPage from "./pages/CustomersPage";
 import OrdersPage from "./pages/OrdersPage";
+import BookingsPage from "./pages/BookingsPage"; // Thêm dòng này
 import SettingsPage from "./pages/SettingsPage";
 import SalesPage from "./pages/SalesPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
@@ -13,6 +14,7 @@ import ToursPage from './pages/ToursPage';
 import TourSchedulesPage from './pages/TourSchedulesPage';
 import LocationsPage from './pages/LocationsPage';
 import PartnersPage from './pages/PartnersPage'; // Đảm bảo import đúng tên file
+import ReviewsPage from './pages/ReviewsPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -155,7 +157,36 @@ function App() {
           <Navigate to="/login" replace />
         )
       } />
-
+      <Route path='/bookings' element={
+        isAuthenticated ? (
+          <div className='flex h-screen bg-theme-background text-theme-text-primary overflow-hidden'>
+            <Sidebar />
+            <BookingsPage />
+          </div>
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+      <Route path="/schedules" element={
+        isAuthenticated ? (
+          <div className="flex h-screen bg-theme-background text-theme-text-primary overflow-hidden">
+            <Sidebar />
+            <TourSchedulesPage />
+          </div>
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+      <Route path="/reviews" element={
+        isAuthenticated ? (
+          <div className="flex h-screen bg-theme-background text-theme-text-primary overflow-hidden">
+            <Sidebar />
+            <ReviewsPage />
+          </div>
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
       {/* Fallback cho các route không hợp lệ */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

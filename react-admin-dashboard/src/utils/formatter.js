@@ -114,31 +114,47 @@ export const getRelativeTime = (dateString) => {
  * @param {string} currency - Đơn vị tiền tệ (mặc định là 'VND')
  * @returns {string} Chuỗi tiền tệ đã được định dạng
  */
-export const formatCurrency = (amount, currency = 'VND') => {
-  if (amount === null || amount === undefined) {
-    return 'N/A';
+// Cải thiện hàm formatCurrency để xử lý nhiều loại dữ liệu
+export const formatCurrency = (value) => {
+  // Thêm logging để debug
+  console.log("formatCurrency input:", value, typeof value);
+
+  if (value === null || value === undefined || value === '') {
+    return '0 đ';
   }
+
+  // Đảm bảo chuyển về số
+  let numericValue = 0;
 
   try {
-    // Chuyển đổi amount thành number nếu nó là string
-    const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-
-    // Kiểm tra nếu numericAmount không phải là số hợp lệ
-    if (isNaN(numericAmount)) {
-      return 'N/A';
+    if (typeof value === 'string') {
+      // Xử lý chuỗi cẩn thận hơn
+      const cleanValue = value.replace(/[^\d.-]/g, '');
+      numericValue = parseFloat(cleanValue);
+    } else {
+      numericValue = parseFloat(value);
     }
-
-    // Định dạng số theo locale Việt Nam, có đơn vị tiền tệ
-    const formatter = new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    });
-
-    return formatter.format(numericAmount);
   } catch (error) {
-    console.error("Error formatting currency:", error);
-    return `${amount} ${currency}`;
+    console.error("Error parsing currency value:", value, error);
+    return '0 đ';
   }
+
+  // Kiểm tra lại sau khi parse
+  if (isNaN(numericValue)) {
+    console.warn("Invalid currency value after parsing:", value);
+    return '0 đ';
+  }
+
+  // Kiểm tra nếu giá trị là 0
+  if (numericValue === 0) {
+    return '0 đ';
+  }
+
+  // Format theo tiền tệ Việt Nam
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(numericValue);
 };

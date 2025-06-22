@@ -21,11 +21,7 @@ const updateTourValidationRules = () => [
     body('mo_ta_chi_tiet').optional({ checkFalsy: true }).isString().withMessage('Mô tả chi tiết phải là một chuỗi.'),
     body('thoi_gian_du_kien').optional({ checkFalsy: true })
         .isLength({ max: 50 }).withMessage('Thời gian dự kiến không quá 50 ký tự.'),
-    body('url_anh_bia').optional({ checkFalsy: true })
-        .custom((value) => {
-            if (value === null || typeof value === 'string') return true;
-            throw new Error('URL ảnh bìa không hợp lệ (phải là chuỗi hoặc null).');
-        }),
+
     // Giữ nguyên validation cho 'partners' như đã cung cấp, nếu cần cập nhật partners qua route này
     body('partners').optional().custom((value) => {
         let partnersArray = value;
@@ -73,18 +69,18 @@ const TourController = {
         try {
             // Trích xuất các trường từ request body
             const { ten_tour, mo_ta_chi_tiet, thoi_gian_du_kien } = req.body;
-            
+
             // Kiểm tra các trường bắt buộc
             if (!ten_tour) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     success: false,
                     message: "Tên tour là bắt buộc"
                 });
             }
-            
+
             // Lấy file ảnh nếu có
             const file = req.file;
-            
+
             // Tạo đối tượng dữ liệu tour
             const tourData = {
                 ten_tour,
@@ -93,10 +89,10 @@ const TourController = {
                 // Các trường khác từ request body
                 ...req.body
             };
-            
+
             // Gọi service để tạo tour
             const createdTour = await tourService.createTour(tourData, file);
-            
+
             return res.status(201).json({
                 success: true,
                 message: "Tạo sản phẩm tour thành công",
@@ -153,6 +149,9 @@ const TourController = {
 
     updateTour: async (req, res, next) => {
         try {
+            console.log("--- DEBUGGING UPDATE TOUR ---");
+            console.log("req.body is:", req.body); // In ra các trường text
+            console.log("req.file is:", req.file);   // In ra thông tin file đã upload
             const result = await tourService.updateTour(req.params.id_san_pham_tour, req.body, req.file);
             return successResponse(res, result.message, result.tour);
         } catch (error) {
@@ -171,8 +170,8 @@ const TourController = {
 
     getTourStatistics: async (req, res, next) => {
         try {
-            const stats = await tourService.getTourStatistics();
-            return successResponse(res, 'Lấy thống kê tour thành công.', stats);
+            const statistics = await tourService.getTourStatistics();
+            return successResponse(res, 'Lấy thống kê tour thành công', statistics);
         } catch (error) {
             next(error);
         }

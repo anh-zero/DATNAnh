@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Map, User, Calendar, Image } from "lucide-react";
+import { Map, Calendar, Tag, Clock } from "lucide-react"; // Thay đổi icon phù hợp
 import { motion } from "framer-motion";
-import { getAllTours, getTourStatistics } from "../api/services/tourService";
+import { getTourStatistics } from "../api/services/tourService";
 
 import Header from '../components/common/Header';
 import StatCard from '../components/common/StatCard';
@@ -21,57 +21,24 @@ const ToursPage = () => {
         try {
             setIsLoading(true);
             setError(null);
-            // Kiểm tra token trước khi gọi API
+
             const token = localStorage.getItem('token');
             if (!token) {
                 throw new Error("Token không tồn tại");
             }
 
-            // Lấy thống kê tour từ backend (nếu có endpoint thống kê)
-            try {
-                const statsResponse = await getTourStatistics();
-                if (statsResponse && statsResponse.data) {
-                    setToursStats({
-                        totalTours: statsResponse.data.totalTours || 0,
-                        activeTours: statsResponse.data.activeTours || 0,
-                        scheduledTours: statsResponse.data.scheduledTours || 0,
-                        upcomingTours: statsResponse.data.upcomingTours || 0
-                    });
-                    return;
-                }
-            } catch (statError) {
-                console.log("Tour statistics not available, fetching all tours instead");
-            }
-
-            // Nếu không có endpoint thống kê, tính toán từ danh sách tours
-            const response = await getAllTours({ limit: 100 });
-
-            if (response && response.data) {
-                const tours = response.data.tours || [];
-                const total = tours.length;
-
-                // Giả định phân loại tours (có thể thay đổi theo logic thực tế)
-                const active = tours.filter(tour =>
-                    tour.lichtrinhtour &&
-                    tour.lichtrinhtour.some(lt => lt.trang_thai_lich_trinh === 'Đang mở bán')
-                ).length;
-
-                const scheduled = tours.filter(tour =>
-                    tour.lichtrinhtour &&
-                    tour.lichtrinhtour.some(lt => lt.trang_thai_lich_trinh === 'Sắp mở bán')
-                ).length;
-
-                const upcoming = tours.filter(tour =>
-                    tour.lichtrinhtour &&
-                    tour.lichtrinhtour.some(lt => new Date(lt.ngay_khoi_hanh) > new Date())
-                ).length;
-
+            // Gọi trực tiếp API thống kê
+            const statsResponse = await getTourStatistics();
+            if (statsResponse && statsResponse.success) {
+                const stats = statsResponse.data || {};
                 setToursStats({
-                    totalTours: total,
-                    activeTours: active,
-                    scheduledTours: scheduled,
-                    upcomingTours: upcoming
+                    totalTours: stats.totalTours || 0,
+                    activeTours: stats.activeTours || 0,
+                    scheduledTours: stats.scheduledTours || 0,
+                    upcomingTours: stats.upcomingTours || 0
                 });
+            } else {
+                throw new Error("Không thể lấy thống kê tour");
             }
         } catch (error) {
             console.error("Error fetching tours stats:", error);
@@ -82,7 +49,7 @@ const ToursPage = () => {
     };
 
     useEffect(() => {
-        // Trì hoãn việc fetch dữ liệu để đảm bảo auth đã được xử lý
+        // Trì hoãn để đảm bảo auth đã được xử lý
         const timer = setTimeout(() => {
             fetchToursStats();
         }, 300);
@@ -96,7 +63,7 @@ const ToursPage = () => {
 
             <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
                 {error && (
-                    <div className="bg-red-50 text-red-600 p-4 rounded-md mb-6">
+                    <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-md mb-6">
                         {error}
                     </div>
                 )}
@@ -106,7 +73,7 @@ const ToursPage = () => {
                     className='grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8'
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1 }}
+                    transition={{ duration: 0.5 }}
                 >
                     <StatCard
                         name='Tổng số tour'
@@ -116,8 +83,8 @@ const ToursPage = () => {
                     />
                     <StatCard
                         name='Tour đang mở bán'
-                        icon={User}
-                        value={toursStats.activeTours}
+                        icon={Tag}
+                        value={toursStats.activeTours.toLocaleString()}
                         color='#50E3C2' // Xanh ngọc
                     />
                     <StatCard
@@ -128,8 +95,8 @@ const ToursPage = () => {
                     />
                     <StatCard
                         name='Tour sắp khởi hành'
-                        icon={Image}
-                        value={toursStats.upcomingTours}
+                        icon={Clock}
+                        value={toursStats.upcomingTours.toLocaleString()}
                         color='#8B5CF6' // Tím
                     />
                 </motion.div>
